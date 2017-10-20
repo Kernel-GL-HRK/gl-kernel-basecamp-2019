@@ -5,11 +5,34 @@
 #include <linux/i2c.h>
 #include <linux/i2c-dev.h>
 
+#include "mpu6050-regs.h"
+
 static int mpu6050_probe(struct i2c_client *drv_client,
 			 const struct i2c_device_id *id)
 {
+	int ret;
+
 	dev_info(&drv_client->dev,
 		"i2c client address is 0x%X\n", drv_client->addr);
+
+	/* Read who_am_i register */
+	ret = i2c_smbus_read_byte_data(drv_client, REG_WHO_AM_I);
+	if (IS_ERR_VALUE(ret)) {
+		dev_err(&drv_client->dev,
+			"i2c_smbus_read_byte_data() failed with error: %d\n",
+			ret);
+		return ret;
+	}
+	if (ret != MPU6050_WHO_AM_I) {
+		dev_err(&drv_client->dev,
+			"wrong i2c device found: expected 0x%X, found 0x%X\n",
+			MPU6050_WHO_AM_I, ret);
+		return -1;
+	}
+	dev_info(&drv_client->dev,
+		"i2c mpu6050 device found, WHO_AM_I register value = 0x%X\n",
+		ret);
+
 	dev_info(&drv_client->dev, "i2c driver probed\n");
 	return 0;
 }
