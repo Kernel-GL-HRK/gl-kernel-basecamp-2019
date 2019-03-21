@@ -13,5 +13,11 @@ int main()
 	cout << "Guess a number:" << endl;
 	cin >> guess;
 	
+	if( guess == secret ) {
+		cout << "You win" << endl;
+	} else {
+		cout << "You loose" << endl;
+	}
+	
 	return 0;
 }
