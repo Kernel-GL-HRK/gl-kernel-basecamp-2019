@@ -6,13 +6,8 @@ int main(){
     scanf("%d", &usr_input);
     int random_number = rand() % 10;
     if(usr_input == random_number)
-    {
-        //some action
-    }
+        printf("You win\n");
     else
-    {
-        //another action
-    }
-
+        printf("You loose\n");
     return 0;
 }
