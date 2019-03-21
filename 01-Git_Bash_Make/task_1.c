@@ -5,6 +5,14 @@ int main(){
     printf("Enter a number");
     scanf("%d", &usr_input);
     int random_number = rand() % 10;
+    if(usr_input == random_number)
+    {
+        //some action
+    }
+    else
+    {
+        //another action
+    }
 
     return 0;
 }
