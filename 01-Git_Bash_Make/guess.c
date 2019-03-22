@@ -6,6 +6,8 @@ void game(void)
 {
         int seed = 10;
         int computer = rand() % seed + 0x30;
+        printf("Guess the number: ");
+        int human = getchar();
 }
 
 int main(void)
