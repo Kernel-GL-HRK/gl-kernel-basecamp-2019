@@ -21,5 +21,6 @@ void game(void)
 int main(void)
 {
         srand(time(NULL));
+        game();
         return 0;
 }
