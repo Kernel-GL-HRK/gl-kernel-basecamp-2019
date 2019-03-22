@@ -8,6 +8,10 @@ void game(void)
         int computer = rand() % seed + 0x30;
         printf("Guess the number: ");
         int human = getchar();
+        if (human < 0x30 || human > 0x39) {
+                puts("Invalid input! Please enter a digit");
+                return;
+        }
         if (human == computer)
                 puts("You win!");
         else
