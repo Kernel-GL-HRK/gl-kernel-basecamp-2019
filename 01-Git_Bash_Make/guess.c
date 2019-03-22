@@ -4,10 +4,12 @@
 
 void game(void)
 {
-        return;
+        int seed = 10;
+        int computer = rand() % seed + 0x30;
 }
 
 int main(void)
 {
+        srand(time(NULL));
         return 0;
 }
