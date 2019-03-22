@@ -9,5 +9,10 @@ int main(void)
         printf("Input number from 0 to 9\n");
         scanf("%d",&input);
 
+        if ( ai == input ) 
+                printf("Victory\n");
+        else 
+                printf("Defeat\n");
+
         return 0;
 }
