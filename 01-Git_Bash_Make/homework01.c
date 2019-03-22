@@ -7,5 +7,9 @@ int main()
     srand(time(NULL));
     int computer = rand() % 10;
     int user = 0;
+    while(user != -1)
+    {
+        break;
+    }
 	return 0;
 }
