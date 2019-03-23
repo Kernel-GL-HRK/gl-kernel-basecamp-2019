@@ -3,6 +3,6 @@
 
 int main()
 {
-    printf("Hello world!\n");
+    printf("Enter any number from 0 to 9 >");
     return 0;
 }
