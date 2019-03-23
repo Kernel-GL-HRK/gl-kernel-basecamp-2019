@@ -9,5 +9,13 @@ int main()
     scanf("%i", &user_number);
     srand(time(NULL));
     rand_number = rand() % 10;
+    if (user_number == rand_number)
+    {
+        printf("You win :)\r\n");
+    }
+    else
+    {
+        printf("You loose :(\r\n");
+    }
     return 0;
 }
