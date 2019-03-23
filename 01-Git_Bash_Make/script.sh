@@ -8,3 +8,4 @@ if [ ! -d $DIR ]
 then
     mkdir $DIR
 fi
+cp *.c $DIR
