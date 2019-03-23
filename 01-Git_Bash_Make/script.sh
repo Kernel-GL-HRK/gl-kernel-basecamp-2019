@@ -10,3 +10,8 @@ then
 fi
 cp *.c $DIR
 tar -zcf $ARCH $DIR
+
+if [ ! -d $REL ]
+then
+    mkdir $REL
+fi
