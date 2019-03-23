@@ -9,3 +9,4 @@ then
     mkdir $DIR
 fi
 cp *.c $DIR
+tar -zcf $ARCH $DIR
