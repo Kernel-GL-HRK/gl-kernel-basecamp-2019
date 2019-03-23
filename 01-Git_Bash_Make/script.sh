@@ -19,5 +19,14 @@ fi
 # Directory check
 if ! [ -d release ]
 then
-        mkdir -v release
+        mkdir -v release # Create directory
+fi
+
+# Archive check
+if ! [ -f release/guesanumber.tar.gz ]
+then
+        tar -czvf release/guesanumber.tar.gz /tmp/guesanumber # Create archive
+else
+        rm -v release/guesanumber.tar.gz # Remove old archive
+        tar -czvf release/guesanumber.tar.gz /tmp/guesanumber # Create archive
 fi
