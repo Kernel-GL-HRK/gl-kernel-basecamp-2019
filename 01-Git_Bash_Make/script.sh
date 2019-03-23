@@ -15,3 +15,9 @@ else
         rm -v /tmp/guesanumber/main.c # Remove old file
         cp -v main.c /tmp/guesanumber # Copy file
 fi
+
+# Directory check
+if ! [ -d release ]
+then
+        mkdir -v release
+fi
