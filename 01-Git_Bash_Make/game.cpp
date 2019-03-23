@@ -21,7 +21,12 @@ cin >> num;
 }
 srand(time(0));		//auto randomisation
 int randNum = rand() % 10;
-cout << "Your number is: " << num <<" and my number is: " << randNum;
+
+if(randNum == num)
+cout << "You win\n";
+else
+cout << "You lose\n";
+
 cout << "\nIf want to continue, press 'y', if you want to exit, press another"
 << " character\n";
 cin >> answer;
