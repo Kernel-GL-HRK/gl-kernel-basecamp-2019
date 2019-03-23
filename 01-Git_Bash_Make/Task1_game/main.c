@@ -9,6 +9,12 @@ void Game(void)
 
     scanf("%u", &number);
 
+    if(number > 9)
+    {
+        printf("Error :( Try again! \n");
+        return;
+    }
+
     if(number == (rand() % 10))
     {
         printf("You win! \n");
