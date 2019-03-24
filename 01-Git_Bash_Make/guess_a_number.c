@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define GEN_MAX_VALUE   9
+
 int generate_number(void);
 
 int main()
@@ -8,7 +10,8 @@ int main()
     return 0;
 }
 
-int generate_number()
+int generate_number(void)
 {
-    return 0;
+    srand(time(NULL));
+    return rand() % (GEN_MAX_VALUE + 1);
 }
