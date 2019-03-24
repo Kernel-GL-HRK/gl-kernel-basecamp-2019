@@ -11,3 +11,16 @@ int main(int argc, char** argv) {
                     srand(time(NULL));
                         int AiVallue = rand() % 10 +1;
                         printf ("%d \n", AiVallue);
+                         if(PlayerVallue==AiVallue) 
+                             {
+                                 printf ("Ничья\n");
+                                     }
+                                         if(PlayerVallue > AiVallue) 
+                                             {
+                                                     printf ("Вы победили\n");
+                                                         }
+                                                             if (PlayerVallue < AiVallue)
+                                                                 {
+                                                                     printf ("Поражение\n");
+                                                                         }
+                                                                         
