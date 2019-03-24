@@ -1,8 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int main()
+int main(void)
 {
+    int n;
+    int g;
+    char c;
 
-    return 0;
+    srand(time(NULL));
+    n = 1 + (rand() % 9);
+
+
 }
