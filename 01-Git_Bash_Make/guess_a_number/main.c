@@ -12,8 +12,18 @@
 #define RND_MIN 0
 #define RND_MAX 9
 
+/**
+ * Compares the entered number with a randomly generated number.
+ * @param num entered number
+ * @return 1 if the num equals the generated number; 0 - otherwise
+ */
 _Bool chek_num(int num);
 
+/**
+ * Entry point.
+ * 
+ * @return exit code
+ */
 int main(void)
 {
 	srand((unsigned)time(NULL));
