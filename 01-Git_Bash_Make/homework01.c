@@ -11,21 +11,16 @@ int main()
         printf("Pleace, Enter number 0-9: \n");
         printf("For exit, enter number: -1\n");
         scanf("%d", &user);
-        if (user < -1 || user > 9)
-        {
+        if (user < -1 || user > 9){
             printf("Number should be within of 0-9 range\n");
             continue;
         }
-        if (user == -1)
-        {
+        if (user == -1){
             break;
         }
-        if (user == computer)
-        {
+        if (user == computer){
             printf("You Win!!!\n");
-        }
-        else
-        {
+        }else{
             printf("You Lose!!!\n");
         }
     }
