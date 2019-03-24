@@ -7,6 +7,11 @@ int generate_number(void);
 
 int main()
 {
+    int user_number = 0;
+
+    printf("Please input some number from 0 to 9: ");
+    scanf("%d", &user_number);
+
     return 0;
 }
 
