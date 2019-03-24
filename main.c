@@ -23,4 +23,8 @@ int main(int argc, char** argv) {
                                                                  {
                                                                      printf ("Поражение\n");
                                                                          }
-                                                                         
+                                                                           printf ("Ваше число = %d,Число противника = %d\n", PlayerVallue, AiVallue);
+                                                                            
+                                                                                }
+                                                                                    return 0;
+                                                                                    }
