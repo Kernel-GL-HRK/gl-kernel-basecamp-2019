@@ -9,7 +9,9 @@ void InputDaTa(int &k)
 
 int main()
 {
+        int rand_numbers;
         int numbers;
 	Input(numbers);
+        rand_numbers = rand() % 10;
 	return 0;
 }
