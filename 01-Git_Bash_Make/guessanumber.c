@@ -13,12 +13,8 @@ void main()
 	RNum = rand()%10;
 
 	if(UsrNum == RNum) {
-
-
+		printf(" \n Wow, you win!");
 	} else {
-
-
+		printf(" \n Oops, you lost...");
 	}
-
-
 }
