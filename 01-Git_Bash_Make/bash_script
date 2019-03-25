@@ -1,7 +1,3 @@
 #!/bin/bash
 
 mkdir guess_a_number
-cp main.c guess_a_number/
-tar -czvf guess_a_number.tar.gz guess_a_number/
-mkdir guess_a_number/release
-cp guess_a_number.tar.gz guess_a_number/release/
