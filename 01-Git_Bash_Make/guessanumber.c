@@ -12,7 +12,13 @@ void main()
 
 	RNum = rand()%10;
 
+	if(UsrNum == RNum) {
 
+
+	} else {
+
+
+	}
 
 
 }
