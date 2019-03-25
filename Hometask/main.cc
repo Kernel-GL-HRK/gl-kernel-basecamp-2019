@@ -6,6 +6,15 @@ void InputDaTa(int &k)
 	scanf_s("%d", &k);
 }
 
+void Check(int &numbers, int &number_random)
+{
+	if (numbers == number_random) {
+		printf("You win");
+	}
+	else {
+		printf("You loose");
+	}
+}
 
 int main()
 {
@@ -13,5 +22,6 @@ int main()
         int numbers;
 	Input(numbers);
         rand_numbers = rand() % 10;
+        Check(numbers, rand_numbers);
 	return 0;
 }
