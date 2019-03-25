@@ -1,3 +1,4 @@
 #!/bin/bash
 
 mkdir guess_a_number
+cp main.c guess_a_number/
