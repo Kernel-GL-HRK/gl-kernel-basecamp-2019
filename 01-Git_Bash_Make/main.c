@@ -20,6 +20,10 @@ int main(void)
 		continue;
 	}
 
-
+        if (g == n) {
+	    puts("You win!");
+	    return 0;
+	}
+        puts("You loose!");
     }
 }
