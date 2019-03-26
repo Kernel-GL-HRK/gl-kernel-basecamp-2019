@@ -4,4 +4,8 @@ mkdir tmp
 mkdir tmp/guesanumber
 
 cp dz1.c tmp/guesanumber/
+
 tar -zcf guesanumber.tar.gz tmp/guesanumber/
+
+mkdir release
+cp guesanumber.tar.gz release/
