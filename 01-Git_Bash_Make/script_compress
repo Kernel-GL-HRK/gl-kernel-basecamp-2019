@@ -1,1 +1,9 @@
 #! /bin/bash -xv
+
+TEMP=/tmp/guesanumber
+
+if ! [ -d $TEMP ]
+	then
+		mkdir $TEMP
+fi
+
