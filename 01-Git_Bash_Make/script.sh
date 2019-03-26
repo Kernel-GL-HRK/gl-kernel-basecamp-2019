@@ -1,7 +1,10 @@
 #!/bin/bash
 # Bash script
 
+
 DIR=/tmp/guesanumber
+ARCH=guesanumber.tar.gz
+
 
 if ! [ -d $DIR ]
 then
@@ -10,8 +13,9 @@ fi
 
 cp *.c $DIR
 
+tar -czf $ARCH $DIR
 
-		
+
 
 
 
