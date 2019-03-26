@@ -1,5 +1,6 @@
 #! /bin/bash -xv
 
+ARCH=guesanumber.tar.gz
 TEMP=/tmp/guesanumber
 
 if ! [ -d $TEMP ]
@@ -8,3 +9,6 @@ if ! [ -d $TEMP ]
 fi
 
 cp *.c $TEMP
+
+tar -cvzf  $ARCH $TEMP
+
