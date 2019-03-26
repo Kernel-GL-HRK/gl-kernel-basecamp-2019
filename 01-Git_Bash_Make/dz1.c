@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-int main(void) 
+int game() 
 {
         int d;
         int r;
@@ -11,7 +11,13 @@ int main(void)
         printf("Enter number 0-9>");
         scanf("%d", &d);
         r = rand() % 10;
-        if (d == r) {
+        return d == r;
+}
+
+int main(void) 
+{
+   
+        if (game()) {
                 printf("You win\n");
                 return 0;
         }
