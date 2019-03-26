@@ -1,1 +1,4 @@
-mkdir /tmp/guesanumber
+if [ ! -d "/tmp/guesanumber" ]
+then
+	mkdir /tmp/guesanumber
+fi
