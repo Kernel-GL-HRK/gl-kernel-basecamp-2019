@@ -1,11 +1,19 @@
 #!/bin/bash
 
-mkdir tmp
-mkdir tmp/guesanumber
+filelist="dz1.c part2"
+foldertmp="tmp/guesanumber"
+folderrelease="release"
+filearchive="guesanumber.tar.gz"
+tarswitches="zcf"
 
-cp dz1.c tmp/guesanumber/
+mkdir -p $foldertmp
 
-tar -zcf guesanumber.tar.gz tmp/guesanumber/
+for file in $filelist
+do
+    cp $file $foldertmp
+done
 
-mkdir release
-cp guesanumber.tar.gz release/
+tar -$tarswitches $filearchive $foldertmp
+
+mkdir -p $folderrelease
+cp $filearchive $folderrelease
