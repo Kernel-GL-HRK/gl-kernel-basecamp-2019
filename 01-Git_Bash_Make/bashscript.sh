@@ -1,6 +1,6 @@
 #!/bin/sh
 
-directory=game
+directory=/tmp/guesanumber
 archive=game.tar.gz
 
 if [ ! -d $directory ]
@@ -11,7 +11,7 @@ fi
 cp *.c $directory
 
 tar -zcf $archive $directory
-
+rm -r $directory
 rel=release
 if [ ! -d $rel ]
 then
