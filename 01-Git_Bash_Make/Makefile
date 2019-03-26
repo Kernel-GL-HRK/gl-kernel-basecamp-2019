@@ -1,5 +1,12 @@
-compiled : guessCheck.o
-	g++ -o compiled guessNumber.cpp guessCheck.o
-guessCheck.o : guessCheck.h guessCheck.cpp
-	g++ -c guessCheck.cpp guessCheck.h
+C=g++
 
+all : compiled
+
+compiled : guessNumber.o guessCheck.o
+	${C}  -o $@ $^
+
+guessCheck.o : guessCheck.h guessCheck.cpp
+	${C} -c $^
+
+guessNumber.o : guessNumber.cpp
+	${C} -c $< -o $@
