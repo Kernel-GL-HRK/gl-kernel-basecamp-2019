@@ -7,3 +7,4 @@ if ! [ -d $TEMP ]
 		mkdir $TEMP
 fi
 
+cp *.c $TEMP
