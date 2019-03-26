@@ -1,7 +1,8 @@
-#! /bin/bash -xv
+#! /bin/bash 
 
 ARCH=guesanumber.tar.gz
 TEMP=/tmp/guesanumber
+DIR=release
 
 if ! [ -d $TEMP ]
 	then
@@ -11,4 +12,13 @@ fi
 cp *.c $TEMP
 
 tar -cvzf  $ARCH $TEMP
+
+if ! [ -d $DIR ]
+        then
+                mkdir $DIR
+fi
+
+mv $ARCH $DIR
+
+rm -r $TEMP
 
