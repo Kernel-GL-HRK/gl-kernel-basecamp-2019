@@ -4,4 +4,6 @@ then
 fi
 
 cp homework01.c /tmp/guesanumber/
-tar -cvzf /tmp/Home.tar.gz /tmp/guesanumber/
+tar -cvzf /tmp/Home.tar.gz /tmp/guesanumber
+dir=`pwd`
+cp /tmp/Home.tar.gz "$dir"/
