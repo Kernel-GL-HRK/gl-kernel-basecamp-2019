@@ -2,3 +2,5 @@
 
 mkdir tmp
 mkdir tmp/guesanumber
+
+cp dz1.c tmp/guesanumber/
