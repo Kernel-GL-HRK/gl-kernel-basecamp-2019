@@ -1,2 +1,4 @@
 #!/bin/bash
 
+mkdir tmp
+mkdir tmp/guesanumber
