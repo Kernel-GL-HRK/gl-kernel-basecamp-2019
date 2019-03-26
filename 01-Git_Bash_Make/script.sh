@@ -8,7 +8,14 @@ then
 	mkdir $DIR
 fi
 
+cp *.c $DIR
+
+
 		
+
+
+
+
 
 
 
