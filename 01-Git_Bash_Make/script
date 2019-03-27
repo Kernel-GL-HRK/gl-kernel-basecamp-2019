@@ -5,3 +5,6 @@ read -p "Enter name of create folder: " CRT_FOLDER
 
 #Create folder with entered name
 mkdir $CRT_FOLDER
+
+#Find files with extension ".c" or ".h" and copy to folder with entered name
+ls *.c *.h | xargs cp -t ./$CRT_FOLDER/
