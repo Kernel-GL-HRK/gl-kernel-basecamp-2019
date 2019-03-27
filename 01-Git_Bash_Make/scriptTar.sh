@@ -1,9 +1,12 @@
+DIR=guesanumber
+NAME_TAR=Home.tar.gz
+
 if [ ! -d "/tmp/guesanumber" ]
 then
-	mkdir /tmp/guesanumber
+	mkdir /tmp/"$DIR"
 fi
 
-cp homework01.c /tmp/guesanumber/
-tar -cvzf /tmp/Home.tar.gz /tmp/guesanumber
-dir=`pwd`
-cp /tmp/Home.tar.gz "$dir"/
+cp *.c /tmp/"$DIR"
+tar -cvzf /tmp/"$NAME_TAR" /tmp/"$DIR"
+CUR_DIR=`pwd`
+cp /tmp/"$NAME_TAR" "$CUR_DIR"/
