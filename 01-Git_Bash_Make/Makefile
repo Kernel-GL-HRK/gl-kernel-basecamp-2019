@@ -8,3 +8,5 @@ guess.o: guess.c
 	${C} ${CFLAGS} $? -o $@
 main.o: main.c
 	${C} ${CFLAGS} $? -o $@
+clean:
+	rm *.o
