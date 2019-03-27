@@ -4,3 +4,7 @@ OBJS = guess.o main.o
 
 game: ${OBJS}
 	${C} $? -o $@
+guess.o: guess.c
+	${C} ${CFLAGS} $? -o $@
+main.o: main.c
+	${C} ${CFLAGS} $? -o $@
