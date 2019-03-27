@@ -6,7 +6,7 @@ compiled : guessNumber.o guessCheck.o
 	${C}  -o $@ $^
 
 guessCheck.o : guessCheck.h guessCheck.cpp
-	${C} -c $^
+	${C} -c $^ -o $@
 
 guessNumber.o : guessNumber.cpp
-	${C} -c $< -o $@
+	${C} -c $^ -o $@
