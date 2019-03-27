@@ -17,14 +17,10 @@ int game()
 int main(void) 
 {
    
-        if (game()) {
+        if (game())
                 printf("You win\n");
-                return 0;
-        }
-        else {
+        else
                 printf("You loose\n");
-                return 1;
-        }
     
         return 0;
 }
