@@ -10,3 +10,5 @@ main.o: main.c
 	${C} ${CFLAGS} $? -o $@
 clean:
 	rm *.o
+uninstall:
+	rm game
