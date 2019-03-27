@@ -8,3 +8,7 @@ mkdir $CRT_FOLDER
 
 #Find files with extension ".c" or ".h" and copy to folder with entered name
 ls *.c *.h | xargs cp -t ./$CRT_FOLDER/
+
+#Zip the folder
+tar -cvzf $CRT_FOLDER.tar.gz $CRT_FOLDER
+
