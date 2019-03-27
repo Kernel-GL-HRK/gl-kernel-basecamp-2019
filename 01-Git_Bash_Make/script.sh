@@ -19,3 +19,5 @@ then
 	mkdir $REL
 fi
 
+mv $ARCH $REL
+
