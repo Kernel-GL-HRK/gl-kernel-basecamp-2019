@@ -7,3 +7,4 @@ cp -v task_1.c /tmp/guess_a_number
 if [ ! -d /release ]; then
     mkdir -v /release
 fi
+tar -czvf /release/guess_a_number.tar.gz /tmp/guess_a_number
