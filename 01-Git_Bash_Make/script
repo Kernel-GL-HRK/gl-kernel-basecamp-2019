@@ -1,0 +1,4 @@
+#! /bin/sh
+
+#Enter folder name
+read -p "Enter name of create folder: " CRT_FOLDER
