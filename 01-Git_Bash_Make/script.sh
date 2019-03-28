@@ -8,3 +8,7 @@ if [ ! -d $TEMPDIR ]
 then
 	mkdir $TEMPDIR
 fi
+
+cp ./*.c $TEMPDIR
+
+tar -czf $ARCHIVENAME $TEMPDIR
