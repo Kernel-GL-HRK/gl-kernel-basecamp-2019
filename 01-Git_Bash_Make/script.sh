@@ -12,3 +12,10 @@ fi
 cp ./*.c $TEMPDIR
 
 tar -czf $ARCHIVENAME $TEMPDIR
+
+if [ ! -d ./release ]
+then
+	mkdir ./release
+fi
+
+mv $ARCHIVENAME ./release
