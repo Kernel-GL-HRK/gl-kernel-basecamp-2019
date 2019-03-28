@@ -1,16 +1,16 @@
 #!/bin/bash
 
-tmpDir=$tmpDir"tmp/guesanumber"
-realiseDir=$realiseDir"realise"
+TMP_DIR=$tmpDir"tmp/guesanumber"
+REALISE_DIR=$realiseDir"realise"
 
-mkdir -p $tmpDir
-if [ -d "${tmpDir}" ]; then
-   mkdir -p $realiseDir
-   cp *.c $tmpDir
-   tar -zcf $realiseDir/guesanumber.tar.gz  -C  $tmpDir *.c
+mkdir -p $TMP_DIR
+if [ -d "${TMP_DIR}" ]; then
+   mkdir -p $REALISE_DIR
+   cp *.c $TMP_DIR
+   tar -zcf $REALISE_DIR/guesanumber.tar.gz  -C  $TMP_DIR *.c
    
-   rm ${tmpDir}/*.c
-   rmdir -p $tmpDir
+   rm ${TMP_DIR}/*.c
+   rmdir -p $TMP_DIR
 else
    echo "dir can not be created"
 fi
