@@ -10,3 +10,9 @@ fi
 cp *.cpp $VALUE
 
 tar -zcvf guesanumber.tar.gz $VALUE
+
+if [ ! -d release ]
+then
+ mkdir -v release
+fi
+
