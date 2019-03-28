@@ -13,6 +13,7 @@ mkdir $TEMP_DIR/$PROJECT_NAME
 cp * $TEMP_DIR/$PROJECT_NAME
 cd $TEMP_DIR
 tar -cvzf $ARCHIVE_NAME $PROJECT_NAME
+rm -rvf ./$PROJECT_NAME
 cd $CURRENT_DIR
 if [ ! -d $TARGET_DIR ]; then
     mkdir $TARGET_DIR
