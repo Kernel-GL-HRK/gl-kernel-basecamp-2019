@@ -1,0 +1,20 @@
+#!/bin/sh
+
+TEMP_DIR=/tmp
+PROJECT_NAME=guesanumber
+ARCHIVE_NAME=$PROJECT_NAME.tar.gz
+TARGET_DIR=./release
+CURRENT_DIR=${PWD}
+
+if [ -d $TEMP_DIR/$PROJECT_NAME ]; then
+    rm -rvf $TEMP_DIR/$PROJECT_NAME
+fi
+mkdir $TEMP_DIR/$PROJECT_NAME
+cp * $TEMP_DIR/$PROJECT_NAME
+cd $TEMP_DIR
+tar -cvzf $ARCHIVE_NAME $PROJECT_NAME
+cd $CURRENT_DIR
+if [ ! -d $TARGET_DIR ]; then
+    mkdir $TARGET_DIR
+fi
+mv -f $TEMP_DIR/$ARCHIVE_NAME $TARGET_DIR
