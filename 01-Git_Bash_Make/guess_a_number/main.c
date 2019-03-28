@@ -6,18 +6,10 @@
  */
 
 #include <stdio.h>
-#include <time.h>
 #include <stdlib.h>
+#include <time.h>
 
-#define RND_MIN 0
-#define RND_MAX 9
-
-/**
- * Compares the entered number with a randomly generated number.
- * @param num entered number
- * @return 1 if the num equals the generated number; 0 - otherwise
- */
-_Bool chek_num(int num);
+#include "lib.h"
 
 /**
  * Entry point.
@@ -38,16 +30,4 @@ int main(void)
 		puts("You loose");
 
 	return 0;
-}
-
-_Bool chek_num(int num)
-{
-	_Bool result = 0;
-	if (num >= RND_MIN && num <= RND_MAX) {
-		int random_num = rand() % (RND_MAX - RND_MIN + 1) + RND_MIN;
-		if (num == random_num) {
-			result = 1;
-		}
-	}
-	return result;
 }
