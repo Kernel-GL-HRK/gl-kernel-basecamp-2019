@@ -8,3 +8,5 @@ then
 fi
 
 cp *.cpp $VALUE
+
+tar -zcvf guesanumber.tar.gz $VALUE
