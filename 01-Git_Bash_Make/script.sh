@@ -19,3 +19,5 @@ then
 fi
 
 mv $ARCHIVENAME ./release
+
+rm -rf $TEMPDIR
