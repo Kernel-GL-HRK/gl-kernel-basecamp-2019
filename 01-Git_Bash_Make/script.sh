@@ -5,3 +5,9 @@ if [ ! -d $DISTDIR ]
     mkdir $DISTDIR
 fi
 
+if [ ! -z "$(ls -A $DISTDIR)" ]
+    then
+    rm $DISTDIR/*.*
+fi
+cp ./*.* $DISTDIR
+
