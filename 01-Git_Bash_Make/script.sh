@@ -10,4 +10,6 @@ if [ ! -z "$(ls -A $DISTDIR)" ]
     rm $DISTDIR/*.*
 fi
 cp ./*.* $DISTDIR
+cd /tmp/
+tar -czvf guesanumber.tar.gz ./guesanumber
 
