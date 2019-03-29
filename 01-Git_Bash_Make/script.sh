@@ -11,6 +11,11 @@ cp *.cpp $DEST
 
 tar -zcvf guesanumber.tar.gz $DEST
 
+if [ ! -d release ]
+then
+mkdir -v release
+fi
+
 
 
 
