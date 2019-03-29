@@ -9,6 +9,9 @@ fi
 
 cp *.cpp $DEST
 
+tar -zcvf guesanumber.tar.gz $DEST
+
+
 
 
 
