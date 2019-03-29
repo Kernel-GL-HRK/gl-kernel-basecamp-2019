@@ -16,3 +16,6 @@ $(MAIN).o: $(MAIN).c
 
 $(GAMECODE).o: $(GAMECODE).c $(GAMECODE).h
 	$(C) -c $(GAMECODE).c -o $(GAMECODE).o
+
+clean:
+	rm *.o $(DESTFILE)
