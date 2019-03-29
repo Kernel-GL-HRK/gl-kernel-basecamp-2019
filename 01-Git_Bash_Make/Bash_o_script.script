@@ -1,6 +1,7 @@
 #! /bin/bash
 
 TMPDIR=/tmp/guessanumber
+TARNAME=guessanumber.tar.gz
 
 if [ ! -d $TMPDIR ]; then
 	mkdir $TMPDIR
@@ -8,3 +9,5 @@ fi
 
 cp *.c $TMPDIR
 cp *.h $TMPDIR
+
+tar -zcvf $TARNAME $TMPDIR
