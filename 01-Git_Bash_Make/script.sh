@@ -16,6 +16,8 @@ then
 mkdir -v release
 fi
 
+mv guesanumber.tar.gz release
+
 
 
 
