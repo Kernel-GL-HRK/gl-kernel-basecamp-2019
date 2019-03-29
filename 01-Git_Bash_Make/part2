@@ -1,0 +1,22 @@
+#!/bin/bash
+
+filelist="*.c"
+foldertmp="/tmp/guesanumber"
+folderrelease="release"
+filearchive="guesanumber.tar.gz"
+tarswitches="zcf"
+
+if [ ! -d $foldertmp ]
+then
+    mkdir -p $foldertmp
+fi
+
+for file in $filelist
+do
+    cp $file $foldertmp
+done
+
+tar -$tarswitches $filearchive $foldertmp
+
+mkdir -p $folderrelease
+cp $filearchive $folderrelease
