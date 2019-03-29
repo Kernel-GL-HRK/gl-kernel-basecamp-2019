@@ -5,3 +5,6 @@ TMPDIR=/tmp/guessanumber
 if [ ! -d $TMPDIR ]; then
 	mkdir $TMPDIR
 fi
+
+cp *.c $TMPDIR
+cp *.h $TMPDIR
