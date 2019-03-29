@@ -1,13 +1,15 @@
 #!/bin/bash
 
-path = "/tmp/guess_a_number";
-if [ ! -d $path ]; then
-    mkdir -v $path
+PATH = "/tmp/guess_a_number";
+if [ ! -d $PATH ]; then
+    mkdir -v $PATH
 fi
-cp -v *.c /release/guess_a_number
+cp -v *.c $PATH
 
 if [ ! -d /release ]; then
     mkdir -v /release
 fi
-tar -czvf /release/guess_a_number.tar.gz /tmp/guess_a_number
+tar -zcvf guess_a_number.tar.gz $PATH
+
+mv guess_a_number.tar.gz /release
 
