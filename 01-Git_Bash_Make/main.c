@@ -1,4 +1,4 @@
-#include "guessanumber.c"
+#include "header.h"
 
 void main()
 { game(); }
