@@ -1,8 +1,6 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
+#include "header.h"
 
-void main()
+void game()
 {
 	srand(time(NULL));
 
