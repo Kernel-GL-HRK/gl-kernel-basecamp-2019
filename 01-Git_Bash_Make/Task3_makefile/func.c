@@ -1,0 +1,19 @@
+#include "func.h"
+
+void Game(void)
+{
+    uint32_t number;
+    srand(time(0));
+
+    scanf("%u", &number);
+
+    if(number > 9){
+        printf("Error :( Try again! \n");
+        return;
+    }
+
+    if(number == (rand() % 10))
+        printf("You win! \n");
+    else
+        printf("You loose! \n");
+}
