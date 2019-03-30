@@ -2,6 +2,7 @@
 
 TMPDIR=/tmp/guessanumber
 TARNAME=guessanumber.tar.gz
+FINDIR=release
 
 if [ ! -d $TMPDIR ]; then
 	mkdir $TMPDIR
@@ -11,3 +12,9 @@ cp *.c $TMPDIR
 cp *.h $TMPDIR
 
 tar -zcvf $TARNAME $TMPDIR
+
+if [ ! -d release ]; then
+	mkdir release
+fi
+
+cp $TARNAME $FINDIR
