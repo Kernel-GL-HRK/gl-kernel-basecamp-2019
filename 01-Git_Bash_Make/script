@@ -1,17 +1,27 @@
 #! /bin/sh
 
-#Enter folder name
-read -p "Enter name of create folder: " CRT_FOLDER
-
-#Create folder with entered name
-mkdir $CRT_FOLDER
+#Create folders tmp/guess_a_number/
+mkdir -p tmp/guess_a_number
 
 #Find files with extension ".c" or ".h" and copy to folder with entered name
-ls *.c *.h | xargs cp -t ./$CRT_FOLDER/
+ls *.c *.h | xargs cp -t tmp/guess_a_number
 
-#Zip the folder
-tar -cvzf $CRT_FOLDER.tar.gz $CRT_FOLDER
+#Zip the folders
+tar -cvzf guess_a_number.tar.gz tmp/guess_a_number
 
-#Remove folder
-rm -R $CRT_FOLDER
+#Create folders release 
+if [ ! -d release ] 
+then
+	mkdir release	
+fi
+cp guess_a_number.tar.gz ./release
+#Copy to folder zip archive
+
+
+#Remove tmp folder
+rm -R tmp
+
+#Remove ip archive
+rm guess_a_number.tar.gz
+
 
