@@ -1,12 +1,10 @@
 #include <stdio.h>
-#include <stdlib.h> //for rand()
-#include <time.h>
+#include "random_func.h"
 int main()
 {
     int usr_input;
-    int random_number = rand() % 10;
-    for(int i = 0; i < 100; ++i){
-    printf("Enter a number");
+    int random_number = Generate_random_number()  % 10;
+    printf("Enter a number ");
     scanf("%d", &usr_input);
     if(usr_input == random_number)
         printf("You win\n");
