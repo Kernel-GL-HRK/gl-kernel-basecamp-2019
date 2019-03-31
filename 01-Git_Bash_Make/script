@@ -1,13 +1,15 @@
 #! /bin/sh
 
+DIR_TMP=/tmp/guess_a_number  
+
 #Create folders tmp/guess_a_number/
-mkdir -p tmp/guess_a_number
+mkdir $DIR_TMP
 
 #Find files with extension ".c" or ".h" and copy to folder with entered name
-ls *.c *.h | xargs cp -t tmp/guess_a_number
+ls *.c *.h | xargs cp -t $DIR_TMP
 
 #Zip the folders
-tar -cvzf guess_a_number.tar.gz tmp/guess_a_number
+tar -cvzf guess_a_number.tar.gz $DIR_TMP
 
 #Create folders release 
 if [ ! -d release ] 
@@ -19,7 +21,7 @@ cp guess_a_number.tar.gz ./release
 
 
 #Remove tmp folder
-rm -R tmp
+rm -R $DIR_TMP
 
 #Remove ip archive
 rm guess_a_number.tar.gz
