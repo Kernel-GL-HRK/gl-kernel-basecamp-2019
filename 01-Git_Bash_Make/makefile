@@ -1,7 +1,7 @@
 COMPILER=gcc
 OBJS=main.o random_func.o
 
-install: ${OBJS}
+game: ${OBJS}
 	${COMPILER} -o Guess_a_number_game ${OBJS}
 
 main.o: random_func.o task_1.c
