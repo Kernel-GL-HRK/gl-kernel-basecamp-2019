@@ -5,8 +5,10 @@
 #include <linux/uaccess.h>
 #include <linux/fs.h>
 
-#define CLASS_NAME	"chrdev"
-#define DEVICE_NAME	"chrdev_example"
+#include <linux/slab.h>	/* kfree(), kmalloc() */
+
+#define CLASS_NAME	"vdk-chrdev"
+#define DEVICE_NAME	"vdk-chrdev-example"
 #define BUFFER_SIZE	1024
 
 static struct class *pclass;
@@ -16,7 +18,9 @@ static int major;
 static int is_open;
 
 static int data_size;
-static unsigned char data_buffer[BUFFER_SIZE];
+static int buffer_size = BUFFER_SIZE;
+
+static unsigned char* data_buffer = NULL;
 
 static int dev_open(struct inode *inodep, struct file *filep)
 {
@@ -53,7 +57,7 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
 	}
 	data_size = 0; /* eof for cat */
 
-	pr_info("chrdev: %ld bytes read\n", len);
+	pr_info("chrdev: %d bytes read\n", len);
 	return len;
 }
 
@@ -91,6 +95,13 @@ static int chrdev_init(void)
 	is_open = 0;
 	data_size = 0;
 
+	data_buffer = kzalloc(buffer_size * sizeof(*data_buffer), GFP_KERNEL);
+	if (!data_buffer) {
+		pr_info("chrdev: register error\n");
+        return -ENOMEM;
+
+    }
+
 	major = register_chrdev(0, DEVICE_NAME, &fops);
 	if (major < 0) {
 		pr_err("register_chrdev failed: %d\n", major);
@@ -125,14 +136,16 @@ static void chrdev_exit(void)
 	class_destroy(pclass);
 	unregister_chrdev(major, DEVICE_NAME);
 
+	kfree(data_buffer);
+
 	pr_info("chrdev: module exited\n");
 }
 
 module_init(chrdev_init);
 module_exit(chrdev_exit);
 
-MODULE_AUTHOR("Andriy.Khulap <andriy.khulap@globallogic.com>");
-MODULE_DESCRIPTION("Character device example driver");
+MODULE_AUTHOR("Oleksii.Vodka <oleksii.vodka@gmail.com>");
+MODULE_DESCRIPTION("Character device driver");
 MODULE_LICENSE("GPL");
 MODULE_VERSION("0.1");
 
