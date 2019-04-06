@@ -8,6 +8,7 @@ MODULE_DESCRIPTION("Testing linux character device");
 MODULE_VERSION("0.1");
 
 #define KBITE 1024
+#define MODULE_NAME "concmod"
 
 static int major = 0;
 static int minor = 0;

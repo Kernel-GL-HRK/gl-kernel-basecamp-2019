@@ -5,6 +5,7 @@
 #include <linux/slab.h>
 #include <linux/cdev.h>
 #include <asm/uaccess.h>
+#include <proc_info.c>
 
 #define DEVICE_NAME "concdev"
 
@@ -13,9 +14,10 @@ static int minor_number;
 static int count_dev;
 
 static struct cdev *cdev;
+size_t size_buffer;
+size_t capacity;
 
 static char *buffer;
-static size_t size_buffer;
 
 static struct file_operations fops =
 {
@@ -28,20 +30,21 @@ static struct file_operations fops =
 
 int create_cdevice(int major, int minor, int count, size_t size)
 {
+	int result;
+    dev_t dev = 0;
+
 	major_number = major;
 	minor_number = minor;
 	count_dev = count;
 	size_buffer = size;
-
-	int result;
-	dev_t dev = 0;
+	capacity = size;
 
 	if (major_number) {
 		dev = MKDEV(major_number, minor_number);
 		result = register_chrdev_region(dev, count_dev, DEVICE_NAME);
 	} else {
 		result = alloc_chrdev_region(&dev, minor_number, count_dev, DEVICE_NAME);
-		major = MAJOR(dev);
+		major_number = MAJOR(dev);
 	}
 
 	if (result < 0) {
@@ -60,11 +63,18 @@ int create_cdevice(int major, int minor, int count, size_t size)
 	if (cdev_add(cdev, dev, count)) { 
 		printk("ERROR (CharDev): cdev_add error\n");
 	}
-	printk("INFO (CharDev): major_number %d minor_number %d\n", major, minor);
+	printk("INFO (CharDev): major_number %d minor_number %d\n",
+	        major_number, minor_number);
 	
 	buffer = kzalloc(size, GFP_KERNEL);
 	if (!buffer) {
 		result = -ENOMEM;
+		goto fail;
+	}
+
+	result = create_proc_info(DEVICE_NAME, &size_buffer, &capacity);
+
+	if (result < 0) {
 		goto fail;
 	}
 
@@ -89,6 +99,8 @@ void remove_cdevice(void)
 	}
 
 	unregister_chrdev_region(devno, count_dev);
+
+    remove_proc_info();
 
 	printk("MESSAGE (CharDev): device remove\n");
 }
@@ -145,6 +157,8 @@ ssize_t cdev_write(struct file *filp, const char __user *buf, size_t count, loff
 	}
 	*f_pos += count;
 	retval = count;
+
+	capacity = size_buffer - (size_t) (*f_pos);
 
 	out:
 		return retval;

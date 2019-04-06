@@ -1,5 +1,5 @@
-#ifndef DEV_H
-#define DEV_H
+#ifndef CONCDEV_H
+#define CONCDEV_H
 
 #include <linux/fs.h>
 
