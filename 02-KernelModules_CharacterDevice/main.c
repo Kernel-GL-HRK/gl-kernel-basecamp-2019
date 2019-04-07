@@ -11,9 +11,11 @@
 #define MODULE_NAME 	"ChD"
 #endif
 
-#define BUFFER_SIZE 		1024 //обьем буфера
+#define BUFFER_SIZE 		1024 
 #define DEVICE_NAME 	"charDevice"
 #define CLASS_NAME		"chDClass"
+#define PROC_DIRECTORY 	"charDevice"
+#define PROC_FILENAME 	"chd"
 
 int buffer_increase = 0;
 
@@ -27,6 +29,14 @@ static int major;
 
 static struct class* chdClass = NULL;
 static struct device* chDevice = NULL;
+static struct proc_dir_entry *proc_dir;
+static struct proc_dir_entry *proc_file;
+
+static int proc_read(struct file *file_p, char __user *buffer, size_t length, loff_t *offset);
+
+static struct file_operations proc_fops = {
+	.read  = proc_read,
+};
 
 //===Buffer operations===
 
@@ -46,6 +56,60 @@ static void buffer_clean(void)
         kfree(data_buff);
         data_buff = NULL;
     }
+}
+
+//===/proc file operations===
+
+static int create_proc(void)
+{
+    proc_dir = proc_mkdir(PROC_DIRECTORY, NULL);
+    if (NULL == proc_dir)
+        return -EFAULT;
+
+    proc_file = proc_create(PROC_FILENAME, S_IFREG | S_IRUGO | S_IWUGO, proc_dir, &proc_fops);
+    if (NULL == proc_file)
+        return -EFAULT;
+
+    return 0;
+}
+
+
+static void cleanup_proc(void)
+{
+    if (proc_file)
+    {
+        remove_proc_entry(PROC_FILENAME, proc_dir);
+        proc_file = NULL;
+    }
+    if (proc_dir)
+    {
+        remove_proc_entry(PROC_DIRECTORY, NULL);
+        proc_dir = NULL;
+    }
+}
+
+static int proc_read(struct file *filp, char *buffer, size_t len, loff_t *offset ){
+	
+
+	int result;
+	char msg[124];
+	
+	sprintf(msg, "%d %d\n", buffer_size+buffer_increase, buffer_size+buffer_increase-used_memory);
+
+	
+	if(*offset >= strlen(msg)) {
+		*offset=0;
+		return 0;
+	}
+	
+	if(len > strlen(msg) - *offset)
+		len = strlen(msg) - *offset;
+
+	result = raw_copy_to_user((void*)buffer, msg + *offset, len);
+	
+	*offset += len;
+	
+	return len;
 }
 
 //===/dev file operations===
@@ -145,12 +209,16 @@ static int __init ChD_init(void){
 	printk(KERN_INFO "ChD: Device initialized succesfully\n");
 
 	buffer_create();
+	
+	create_proc();
 
 	return 0;
 
 }
 
 static void __exit ChD_exit(void){
+	
+	cleanup_proc();
 	
 	buffer_clean();
 	
