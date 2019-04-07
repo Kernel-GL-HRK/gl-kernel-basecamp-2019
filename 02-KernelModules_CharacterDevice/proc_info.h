@@ -15,3 +15,4 @@ void remove_proc_info(void);
 static ssize_t proc_info_read(struct file *filp, char *buf, size_t count, loff_t *pos);
 
 #endif
+

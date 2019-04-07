@@ -32,7 +32,7 @@ static struct file_operations fops =
 int create_cdevice(int major, int minor, int count, size_t size)
 {
 	int result;
-    dev_t dev = 0;
+        dev_t dev = 0;
 
 	major_number = major;
 	minor_number = minor;
@@ -89,6 +89,7 @@ int create_cdevice(int major, int minor, int count, size_t size)
 	
 	fail:
 		printk("ERROR (CharDev): register error\n");
+		remove_cdevice();
 		return result;  
 }
 
@@ -178,3 +179,4 @@ ssize_t cdev_write(struct file *filp, const char __user *buf, size_t count, loff
 	out:
 		return retval;
 }
+

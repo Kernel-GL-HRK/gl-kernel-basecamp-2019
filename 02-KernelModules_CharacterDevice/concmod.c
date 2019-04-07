@@ -43,9 +43,10 @@ static int __init cmod_init(void)
 	return 0;
 
 	err:
-		cmod_exit();
+		printk("ERROR (CONCDEV): device can't create");
 		return status;
 }
 
 module_init(cmod_init);
 module_exit(cmod_exit);
+

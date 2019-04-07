@@ -33,6 +33,7 @@ int create_proc_info(const char *name, size_t *buffer_size, size_t *capacity)
 	return 0;
 
 	err:
+		remove_proc_info();
 		return -ENOENT;
 }
 
@@ -69,3 +70,4 @@ static ssize_t proc_info_read(struct file *filp, char *buf, size_t count, loff_t
 	err:
 		return retval;
 }
+

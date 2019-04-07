@@ -44,6 +44,7 @@ int create_sysfs_control(const char *name, void (*clear) (void), dev_t devt)
 	return 0;
 
 	err:
+		remove_sysfs_control();
 		return res;
 }
 
@@ -58,9 +59,7 @@ void remove_sysfs_control()
 	printk("MESSAME (SysFsControl): sysfs control removed\n");
 }
 
-static ssize_t sysfs_control_store(struct device *dev,
-								   struct device_attribute *attr, 
-								   const char *buf, size_t count)
+static ssize_t sysfs_control_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	int buffer;
 
@@ -71,8 +70,8 @@ static ssize_t sysfs_control_store(struct device *dev,
 		printk("MESSAGE (SysFsControl): buffer has been cleared\n");
 	} else {
 		printk("MESSAGE (SysFsControl): buffer cannot be cleared\n");
-
 	}
 
 	return count;
 }
+

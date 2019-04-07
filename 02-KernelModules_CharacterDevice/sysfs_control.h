@@ -8,3 +8,4 @@ static ssize_t sysfs_control_store(struct device *dev,
 								   const char *buf, size_t count);
 
 #endif
+

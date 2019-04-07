@@ -67,3 +67,4 @@ elif [[ $1 == "clear" ]]; then
 else
 	help
 fi
+
