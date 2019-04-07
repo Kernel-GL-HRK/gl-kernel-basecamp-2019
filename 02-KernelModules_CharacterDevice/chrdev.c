@@ -53,6 +53,7 @@ static struct kobj_attribute sysfs_attribute = __ATTR(cleanup, 0220, NULL, sysfs
 
 //-----procfs-------
 
+<<<<<<< HEAD
 static int dev_proc_show(struct seq_file *m, void *v)
 {
 	seq_printf(m, "Buffer size = %d\nData length = %d\n", buffer_size, data_size);
@@ -70,6 +71,23 @@ static const struct file_operations dev_proc_fops = {
 	.read = seq_read,
 	.llseek = seq_lseek,
 	.release = single_release,
+=======
+static int dev_proc_show(struct seq_file *m, void *v) {
+  seq_printf(m, "Buffer size = %d\nData length = %d\n", buffer_size, data_size);
+  return 0;
+}
+
+static int dev_proc_open(struct inode *inode, struct  file *file) {
+  return single_open(file, dev_proc_show, NULL);
+}
+
+static const struct file_operations dev_proc_fops = {
+  .owner = THIS_MODULE,
+  .open = dev_proc_open,
+  .read = seq_read,
+  .llseek = seq_lseek,
+  .release = single_release,
+>>>>>>> 92637e1... Lesson 5-7 p2: add procfs status
 };
 
 //-----procfs-------
@@ -182,6 +200,7 @@ static int chrdev_init(void)
 	pr_info("chrdev: device node created successfully\n");
 
 	example_kobject = kobject_create_and_add(DEVICE_NAME, kernel_kobj);
+<<<<<<< HEAD
 	if (!example_kobject) {
 		pr_debug("failed to create kobject \n");
 		return -ENOMEM;
@@ -197,6 +216,25 @@ static int chrdev_init(void)
 
 	pr_info("chrdev: module loaded\n");
 
+=======
+    if(!example_kobject) {
+        pr_debug("failed to create kobject \n");
+        return -ENOMEM;
+    }
+    error = sysfs_create_file(example_kobject, &sysfs_attribute.attr);
+    if (error) {
+        pr_debug("failed to create the foo file in /sys/kernel/%s \n", DEVICE_NAME);
+    }
+    pr_info("create the file in /sys/kernel/%s \n", DEVICE_NAME);
+
+
+	proc_create(DEVICE_NAME, 0, NULL, &dev_proc_fops);
+
+
+	pr_info("chrdev: module loaded\n");
+
+
+>>>>>>> 92637e1... Lesson 5-7 p2: add procfs status
 	return 0;
 }
 
@@ -210,6 +248,7 @@ static void chrdev_exit(void)
 	unregister_chrdev(major, DEVICE_NAME);
 
 	kfree(data_buffer);
+
 
 	pr_info("chrdev: module exited\n");
 }
