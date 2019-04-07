@@ -6,6 +6,7 @@
 #include <linux/moduleparam.h>
 #include <linux/device.h>
 #include <linux/module.h>
+#include <linux/sysfs.h>
 
 #ifndef MODULE_NAME
 #define MODULE_NAME 	"ChD"
@@ -26,11 +27,13 @@ static char *data_buff;
 static int is_open = 0;
 static int used_memory = 0;
 static int major;
+static int clear_memory = 0;
 
 static struct class* chdClass = NULL;
 static struct device* chDevice = NULL;
 static struct proc_dir_entry *proc_dir;
 static struct proc_dir_entry *proc_file;
+static struct kobject *chd_kobject;
 
 static int proc_read(struct file *file_p, char __user *buffer, size_t length, loff_t *offset);
 
@@ -40,8 +43,7 @@ static struct file_operations proc_fops = {
 
 //===Buffer operations===
 
-static int buffer_create(void)
-{
+static int buffer_create(void){
     data_buff = kmalloc(buffer_size+buffer_increase, GFP_KERNEL);
 
     if (NULL == data_buff) 
@@ -50,18 +52,33 @@ static int buffer_create(void)
     return 0;
 }
 
-static void buffer_clean(void)
-{
+static void buffer_clean(void){
     if (data_buff) {
         kfree(data_buff);
         data_buff = NULL;
     }
 }
 
+//===/sys file operations===
+
+static ssize_t sysfs_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buffer, size_t len){
+	
+	sscanf(buffer, "%d\n", &clear_memory);
+	printk(KERN_INFO "ChD: clear_memory now = %d\n", clear_memory);
+	
+	if(clear_memory){
+		memset(data_buff, buffer_size, sizeof(*data_buff));
+		used_memory=0;
+		printk(KERN_INFO "ChD: Cleared memory\n")
+	}
+	return len;
+}
+
+static struct kobj_attribute sysfs_attribute =__ATTR(clear_memory, 0220, NULL, sysfs_store);
+
 //===/proc file operations===
 
-static int create_proc(void)
-{
+static int create_proc(void){
     proc_dir = proc_mkdir(PROC_DIRECTORY, NULL);
     if (NULL == proc_dir)
         return -EFAULT;
@@ -74,8 +91,7 @@ static int create_proc(void)
 }
 
 
-static void cleanup_proc(void)
-{
+static void cleanup_proc(void){
     if (proc_file)
     {
         remove_proc_entry(PROC_FILENAME, proc_dir);
@@ -114,8 +130,7 @@ static int proc_read(struct file *filp, char *buffer, size_t len, loff_t *offset
 
 //===/dev file operations===
 
-int dev_open(struct inode *inode, struct file *filp)
-{	
+int dev_open(struct inode *inode, struct file *filp){	
 	if(is_open){
 		printk(KERN_ERR "ChD: Filed to open - device is busy");
 		return -EBUSY;
@@ -124,8 +139,7 @@ int dev_open(struct inode *inode, struct file *filp)
 	return 0;
 }
 
-int dev_release(struct inode *inode, struct file *filp)
-{
+int dev_release(struct inode *inode, struct file *filp){
 	is_open = 0;
 	return 0;
 }
@@ -211,12 +225,17 @@ static int __init ChD_init(void){
 	buffer_create();
 	
 	create_proc();
+	
+	chd_kobject = kobject_create_and_add(MODULE_NAME, kernel_kobj);
+	
+	sysfs_create_file(chd_kobject, &sysfs_attribute.attr);
 
 	return 0;
 
 }
 
 static void __exit ChD_exit(void){
+	kobject_put(chd_kobject);
 	
 	cleanup_proc();
 	
