@@ -42,3 +42,10 @@ static int dev_open(struct inode *inodep, struct file *filep)
 	pr_info("chrdev: device opened\n");
 	return 0;
 }
+
+static int dev_release(struct inode *inodep, struct file *filep)
+{
+	is_open = 0;
+	pr_info("chrdev: device closed\n");
+	return 0;
+}
