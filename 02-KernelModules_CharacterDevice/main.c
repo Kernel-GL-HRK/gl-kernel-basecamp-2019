@@ -23,6 +23,10 @@ static int buffer_size = BUFFER_SIZE;
 static char *data_buff;
 static int is_open = 0;
 static int used_memory = 0;
+static int major;
+
+static struct class* chdClass = NULL;
+static struct device* chDevice = NULL;
 
 //===Buffer operations===
 
@@ -117,3 +121,51 @@ static struct file_operations fops = {
 	.write = dev_write,
 	.release = dev_release,
 };
+
+//===init/exit functions===
+
+static int __init ChD_init(void){
+	
+	printk(KERN_INFO "Loading module...");
+
+	major = register_chrdev(0, DEVICE_NAME, &fops);
+	
+	if(major < 0){
+		printk(KERN_ALERT "ChD: Failed to register major number\n");
+		return major;
+	}
+	else{
+		printk(KERN_INFO "ChD: Registered major number %d\n", major);
+	}
+	
+	chdClass = class_create(THIS_MODULE, CLASS_NAME);
+
+	chDevice = device_create(chdClass, NULL, MKDEV(major, 0), NULL, DEVICE_NAME);
+
+	printk(KERN_INFO "ChD: Device initialized succesfully\n");
+
+	buffer_create();
+
+	return 0;
+
+}
+
+static void __exit ChD_exit(void){
+	
+	buffer_clean();
+	
+	device_destroy(chdClass, MKDEV(major,0));
+	
+	class_unregister(chdClass);
+	
+	class_destroy(chdClass);
+	
+	unregister_chrdev(major, DEVICE_NAME);
+	
+	printk(KERN_INFO "ChD: Module unloaded\n");
+}
+
+module_init(ChD_init);
+module_exit(ChD_exit);
+
+MODULE_LICENSE("GPL");
