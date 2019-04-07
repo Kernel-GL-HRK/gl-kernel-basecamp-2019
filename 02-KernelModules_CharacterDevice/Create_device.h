@@ -12,7 +12,7 @@ ssize_t dev_read (struct file *file_p, char __user *usr_buffer, size_t len, loff
 ssize_t dev_write (struct file *file_p, const char __user *usr_buffer, size_t len, loff_t *offset);
 
 
-struct file_operations my_fops = {
+static struct file_operations my_fops = {
     .owner = THIS_MODULE,
     .read = dev_read,
     .write = dev_write
