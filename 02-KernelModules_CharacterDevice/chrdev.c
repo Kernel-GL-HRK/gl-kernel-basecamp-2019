@@ -1,10 +1,11 @@
 #include <linux/init.h>
 #include <linux/module.h>
+#include <linux/moduleparam.h>
 #include <linux/device.h>
 #include <linux/err.h>
 #include <linux/uaccess.h>
 #include <linux/fs.h>
-
+#include <linux/kernel.h>
 #include <linux/slab.h>	/* kfree(), kmalloc() */
 
 #define CLASS_NAME	"vdk-chrdev"
@@ -19,6 +20,9 @@ static int is_open;
 
 static int data_size;
 static int buffer_size = BUFFER_SIZE;
+
+module_param(buffer_size,int,0660);
+
 
 static unsigned char* data_buffer = NULL;
 
@@ -98,9 +102,10 @@ static int chrdev_init(void)
 	data_buffer = kzalloc(buffer_size * sizeof(*data_buffer), GFP_KERNEL);
 	if (!data_buffer) {
 		pr_info("chrdev: register error\n");
-        return -ENOMEM;
+		return -ENOMEM;
+	}
 
-    }
+	pr_info("chrdev: buffer_size is %d\n", buffer_size);
 
 	major = register_chrdev(0, DEVICE_NAME, &fops);
 	if (major < 0) {
@@ -143,6 +148,7 @@ static void chrdev_exit(void)
 
 module_init(chrdev_init);
 module_exit(chrdev_exit);
+
 
 MODULE_AUTHOR("Oleksii.Vodka <oleksii.vodka@gmail.com>");
 MODULE_DESCRIPTION("Character device driver");
