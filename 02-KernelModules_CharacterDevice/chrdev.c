@@ -30,3 +30,15 @@ static int data_size;
 static unsigned char *data_buffer;
 
 static int is_open;
+
+static int dev_open(struct inode *inodep, struct file *filep)
+{
+	if (is_open) {
+		pr_err("chrdev: already open\n");
+		return -EBUSY;
+	}
+
+	is_open = 1;
+	pr_info("chrdev: device opened\n");
+	return 0;
+}
