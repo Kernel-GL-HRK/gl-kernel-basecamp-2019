@@ -1,6 +1,6 @@
 #include <linux/module.h>
-#include "Create_device.h"
-
+//#include "Create_device.h"
+#include "Proc_interface.h"
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Eduard.Voronkin<eduard.voronkin@nure.ua");
@@ -20,7 +20,7 @@ static int __init char_driver_init(void){
         return -1;
     }
     init();
-    //Some actions will be performed here`j
+    init_proc();
     return 0;
 }
 
@@ -29,8 +29,8 @@ static void __exit char_driver_exit(void){
     cdev_del(&my_dev);
     class_destroy(my_class);
     unregister_chrdev_region(dev, 1);
+    remove_proc_subtree(DIR_NAME, NULL);
     delete_buffer();
-    //Some actions will be performed here
 }
 
 module_init(char_driver_init);
