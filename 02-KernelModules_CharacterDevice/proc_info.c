@@ -19,8 +19,7 @@ int create_proc_info(const char *name, size_t *buffer_size, size_t *capacity)
 	proc_info.capacity = capacity;
 	proc_info.name = name;
 
-	info_proc_file = proc_create(proc_info.name,
-	                             S_IFREG | S_IRUGO | S_IWUGO,
+	info_proc_file = proc_create(proc_info.name, 0444,
 	                             NULL, &fops_proc_info);
 
 	if (info_proc_file == NULL) {

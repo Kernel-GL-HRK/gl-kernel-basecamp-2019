@@ -6,6 +6,7 @@
 #include <linux/cdev.h>
 #include <asm/uaccess.h>
 #include <proc_info.c>
+#include <sysfs_control.c>
 
 #define DEVICE_NAME "concdev"
 
@@ -78,6 +79,12 @@ int create_cdevice(int major, int minor, int count, size_t size)
 		goto fail;
 	}
 
+	result = create_sysfs_control(DEVICE_NAME, clear_buffer, dev);
+
+	if (result < 0) {
+		goto fail;
+	}
+
 	return 0;
 	
 	fail:
@@ -98,11 +105,19 @@ void remove_cdevice(void)
 		buffer = NULL;
 	}
 
+	remove_sysfs_control();
+	remove_proc_info();
+
 	unregister_chrdev_region(devno, count_dev);
 
-    remove_proc_info();
-
 	printk("MESSAGE (CharDev): device remove\n");
+}
+
+void clear_buffer(void)
+{
+	kfree(buffer);
+	buffer = kzalloc(size_buffer, GFP_KERNEL);
+	capacity = size_buffer;
 }
 
 int cdev_open(struct inode *inode, struct file *filp)
