@@ -117,6 +117,14 @@ static void cleanup_procfs(void)
 	}
 }
 
+static ssize_t procfs_read(struct file *fileptr, char __user *buf,
+	size_t len, loff_t *offset)
+{
+	len = PROC_BUF_SIZE;
+
+	snprintf(proc_buffer, PROC_BUF_SIZE, fmt_str, msg_size, buf_size);
+	return simple_read_from_buffer(buf, len, offset, proc_buffer, PROC_BUF_SIZE);
+}
 
 static ssize_t dev_read(struct file *fileptr, char __user *buf,
 	size_t len, loff_t *offset)
