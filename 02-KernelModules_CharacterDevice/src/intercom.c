@@ -19,6 +19,31 @@
 static size_t buf_size = MIN_BUF_SIZE;
 module_param(buf_size, int, 0660);
 
+static char *message;
+static short msg_size;
+
+static int create_buffer(void)
+{
+	if (buf_size < MIN_BUF_SIZE) {
+		pr_warn("Increasing buffer size to %u bytes\n", MIN_BUF_SIZE);
+		buf_size = MIN_BUF_SIZE;
+	}
+	message = kmalloc(buf_size, GFP_KERNEL);
+	if (message == NULL)
+		return -ENOMEM;
+	msg_size = 0;
+	return 0;
+}
+
+static void cleanup_buffer(void)
+{
+	if (message) {
+		kfree(message);
+		message = NULL;
+	}
+	msg_size = 0;
+}
+
 static int __init intercom_init(void)
 {
 	return 0;
