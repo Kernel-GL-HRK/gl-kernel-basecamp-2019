@@ -41,6 +41,13 @@ static struct file_operations dev_fops = {
 	.write = dev_write
 };
 
+static int intercom_uevent(struct device *dev, struct kobj_uevent_env *env)
+{
+	if (add_uevent_var(env, "DEVMODE=%#o", 0666) != 0)
+		return -ENOMEM;
+	return 0;
+}
+
 static int create_buffer(void)
 {
 	if (buf_size < MIN_BUF_SIZE) {
@@ -82,6 +89,7 @@ static int __init intercom_init(void)
 		pr_alert("Failed to register device class\n");
 		return PTR_ERR(intercom_cls);
 	}
+	intercom_cls->dev_uevent = intercom_uevent;
 
 	err = create_buffer();
 	if (err)
