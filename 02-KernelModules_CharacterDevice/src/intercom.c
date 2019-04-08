@@ -91,6 +91,13 @@ static int __init intercom_init(void)
 	}
 	intercom_cls->dev_uevent = intercom_uevent;
 
+	if (device_create(intercom_cls, NULL, chrdev, NULL, DEV_NAME) == NULL) {
+		class_destroy(intercom_cls);
+		unregister_chrdev_region(chrdev, 1);
+		pr_alert("Failed to create the device\n");
+		return -1;
+	}
+
 	err = create_buffer();
 	if (err)
 		goto error;
