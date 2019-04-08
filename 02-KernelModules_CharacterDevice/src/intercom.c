@@ -130,6 +130,23 @@ static ssize_t procfs_read(struct file *fileptr, char __user *buf,
 	return simple_read_from_buffer(buf, len, offset, proc_buffer, PROC_BUF_SIZE);
 }
 
+static ssize_t sysfs_show(struct class *cls, struct class_attribute *attr, char *buf)
+{
+	memset(message, 0, buf_size);
+	msg_size = 0;
+	pr_info("Buffer successfully cleared\n");
+	return 0;
+}
+
+static ssize_t sysfs_store(struct class *cls, struct class_attribute *attr,
+		const char *buf, size_t count)
+{
+	memset(message, 0, buf_size);
+	msg_size = 0;
+	pr_info("Buffer successfully cleared\n");
+	return 0;
+}
+
 static ssize_t dev_read(struct file *fileptr, char __user *buf,
 	size_t len, loff_t *offset)
 {
