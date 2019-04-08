@@ -44,7 +44,7 @@ static struct file_operations proc_fops = {
 //===Buffer operations===
 
 static int buffer_create(void){
-    data_buff = kmalloc(buffer_size+buffer_increase, GFP_KERNEL);
+    data_buff = kzalloc(buffer_size+buffer_increase, GFP_KERNEL);
 
     if (NULL == data_buff) 
         return -ENOMEM;
@@ -67,9 +67,10 @@ static ssize_t sysfs_store(struct kobject *kobj, struct kobj_attribute *attr, co
 	printk(KERN_INFO "ChD: clear_memory now = %d\n", clear_memory);
 	
 	if(clear_memory){
-		memset(data_buff, buffer_size, sizeof(*data_buff));
+		kfree(data_buff);
+		data_buff = kzalloc(buffer_size+buffer_increase, GFP_KERNEL);
 		used_memory=0;
-		printk(KERN_INFO "ChD: Cleared memory\n")
+		printk(KERN_INFO "ChD: Cleared memory\n");
 	}
 	return len;
 }
@@ -121,7 +122,7 @@ static int proc_read(struct file *filp, char *buffer, size_t len, loff_t *offset
 	if(len > strlen(msg) - *offset)
 		len = strlen(msg) - *offset;
 
-	result = raw_copy_to_user((void*)buffer, msg + *offset, len);
+	result = raw_copy_to_user((void*)buffer, msg - *offset, len);
 	
 	*offset += len;
 	
@@ -132,7 +133,7 @@ static int proc_read(struct file *filp, char *buffer, size_t len, loff_t *offset
 
 int dev_open(struct inode *inode, struct file *filp){	
 	if(is_open){
-		printk(KERN_ERR "ChD: Filed to open - device is busy");
+		printk(KERN_ERR "ChD: Failed to open - device is busy");
 		return -EBUSY;
 	}
 	is_open = 1;
@@ -145,26 +146,26 @@ int dev_release(struct inode *inode, struct file *filp){
 }
 
 ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *offset){
-	int error = 0;
+	ssize_t retval = 0;
 
 	int remain = buffer_size - (int) (*offset);
-	
-	if(0 == remain)
-		return 0;
-	if(len > remain)
+	if (remain == 0) {
+		goto out;
+	}
+
+	if (len > remain) {
 		len = remain;
-	
-	error = raw_copy_to_user(buffer, data_buff, len);
-	
-	
-	if(error){
-		printk(KERN_INFO "ChD: Failed to send %d characters\n", error);
-		return -EFAULT;
 	}
-	else{
-		*offset += len;
-		return len;
+
+	if (raw_copy_to_user(buffer, data_buff + *offset, len)) {
+		retval = -EFAULT;
+		goto out;
 	}
+	*offset += len;
+	retval = len;
+
+	out:
+		return retval;
 }
 
 ssize_t dev_write(struct file *filep, const char *buffer, size_t len, loff_t *offset){
@@ -172,23 +173,23 @@ ssize_t dev_write(struct file *filep, const char *buffer, size_t len, loff_t *of
 	int error = 0;
 	int remain = buffer_size - (int) (*offset);
 	
-	used_memory = len;
+	used_memory += len;
 	
 	if(0 == remain)
 		return 0;
 	if(used_memory > remain)
 		return -EIO;
 	
-	error = raw_copy_from_user(data_buff, buffer, used_memory);
+	error = raw_copy_from_user(data_buff + *offset, buffer, len);
 	
 	if(error){
-		printk(KERN_INFO "ChD: Failed to receive %zu characters from the user\n", used_memory);
+		printk(KERN_INFO "ChD: Failed to receive %zu characters from the user\n", len);
 		return -EFAULT;
 	}
 	else{
-		printk(KERN_INFO "ChD: Received %zu characters from the user\n", used_memory);
-		offset += used_memory;
-		return used_memory;
+		printk(KERN_INFO "ChD: Received %zu characters from the user\n", len);
+		offset += len;
+		return len;
 
 	}
 }
