@@ -214,6 +214,13 @@ static int __init intercom_init(void)
 		return PTR_ERR(intercom_cls);
 	}
 	intercom_cls->dev_uevent = intercom_uevent;
+	err = class_create_file(intercom_cls, &sysfs_attr);
+
+	if (err < 0) {
+		pr_alert("Failed to create device class file\n");
+		return err;
+	}
+	pr_info("Device class registered correctly\n");
 
 	if (device_create(intercom_cls, NULL, chrdev, NULL, DEV_NAME) == NULL) {
 		class_destroy(intercom_cls);
@@ -253,6 +260,7 @@ static void __exit intercom_exit(void)
 	cleanup_procfs();
 	cleanup_buffer();
 	device_destroy(intercom_cls, chrdev);
+	class_remove_file(intercom_cls, &sysfs_attr);
 	class_destroy(intercom_cls);
 	unregister_chrdev_region(chrdev, 1);
 	pr_info("Exiting intercom\n");
