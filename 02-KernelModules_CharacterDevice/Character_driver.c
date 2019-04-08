@@ -1,6 +1,7 @@
 #include <linux/module.h>
-//#include "Create_device.h"
+#include "Create_device.h"
 #include "Proc_interface.h"
+#include "Sys_interface.h"
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Eduard.Voronkin<eduard.voronkin@nure.ua");
@@ -21,15 +22,25 @@ static int __init char_driver_init(void){
     }
     init();
     init_proc();
+    init_sys();
     return 0;
 }
 
 static void __exit char_driver_exit(void){
+    // Uninitializing /sys/My_sys_operations interface
+    kobject_put(kobj_dir);
+    sysfs_remove_file(kobj_dir, &file_attr.attr);
+
+    // Uninitializing /proc/My_proc_stats interface
+    remove_proc_subtree(PROC_DIR_NAME, NULL);
+
+    // Deleting device from system and free MAJOR and MINOR numbers
     device_destroy(my_class, dev);
     cdev_del(&my_dev);
     class_destroy(my_class);
     unregister_chrdev_region(dev, 1);
-    remove_proc_subtree(DIR_NAME, NULL);
+
+    // Free allocated for driver buffer memory
     delete_buffer();
 }
 

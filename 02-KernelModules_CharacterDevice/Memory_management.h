@@ -1,3 +1,4 @@
+#pragma once
 #include <linux/moduleparam.h>
 #include <linux/kernel.h>
 #include <linux/stat.h>

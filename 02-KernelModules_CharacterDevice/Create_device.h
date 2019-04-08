@@ -1,4 +1,4 @@
-
+#pragma once
 #include <linux/fs.h> //for getting free MAJOR and MINOR
 #include <linux/cdev.h> //char_dev creation
 #include <linux/types.h> //for dev_t
