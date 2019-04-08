@@ -70,6 +70,24 @@ static void cleanup_buffer(void)
 	msg_size = 0;
 }
 
+static ssize_t dev_read(struct file *fileptr, char __user *buf,
+	size_t len, loff_t *offset)
+{
+	ssize_t status;
+
+	if (len > msg_size)
+		len = msg_size;
+	status = simple_read_from_buffer(buf, len, offset, message, msg_size);
+
+	if (status < 0)
+		pr_err("Failed to read %u bytes\n", msg_size);
+	else if (status > 0) {
+		pr_info("Succefully read %d bytes\n", status);
+		msg_size -= status;
+	}
+	return status;
+}
+
 static int __init intercom_init(void)
 {
 	int err;
