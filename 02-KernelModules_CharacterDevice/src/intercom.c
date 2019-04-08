@@ -25,11 +25,11 @@
 
 static size_t buf_size = MIN_BUF_SIZE;
 module_param(buf_size, int, 0660);
-static char proc_buffer[PROC_BUF_SIZE];
-static const char fmt_str[PROC_BUF_SIZE] = "Buff state: %u/%u bytes\n";
 
 static char *message;
 static short msg_size;
+static char proc_buffer[PROC_BUF_SIZE];
+static const char fmt_str[PROC_BUF_SIZE] = "Buff state: %u/%u bytes\n";
 
 static dev_t chrdev;
 static struct class *intercom_cls;
@@ -214,16 +214,22 @@ static int __init intercom_init(void)
 	if (err)
 		goto error;
 
+	err = create_procfs();
+	if (err)
+		goto error;
+
 	return 0;
 
 error:
 	pr_err("Failed to load module\n");
+	cleanup_procfs();
 	cleanup_buffer();
 	return err;
 }
 
 static void __exit intercom_exit(void)
 {
+	cleanup_procfs();
 	cleanup_buffer();
 	device_destroy(intercom_cls, chrdev);
 	class_destroy(intercom_cls);
