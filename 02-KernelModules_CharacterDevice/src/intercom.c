@@ -75,6 +75,13 @@ static int __init intercom_init(void)
 		return err;
 	}
 	pr_info("Major number registered correctly [%d]\n", MAJOR(chrdev));
+	intercom_cls = class_create(THIS_MODULE, CLASS_NAME);
+
+	if (IS_ERR(intercom_cls)) {
+		unregister_chrdev_region(chrdev, 1);
+		pr_alert("Failed to register device class\n");
+		return PTR_ERR(intercom_cls);
+	}
 
 	err = create_buffer();
 	if (err)
