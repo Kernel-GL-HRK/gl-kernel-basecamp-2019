@@ -97,6 +97,15 @@ static int __init intercom_init(void)
 		pr_alert("Failed to create the device\n");
 		return -1;
 	}
+	cdev_init(&intercom_dev, &dev_fops);
+	if (cdev_add(&intercom_dev, chrdev, 1) == -1) {
+		device_destroy(intercom_cls, chrdev);
+		class_destroy(intercom_cls);
+		unregister_chrdev_region(chrdev, 1);
+		pr_alert("Failed to add the device\n");
+		return -1;
+	}
+	pr_info("Device created correctly\n");
 
 	err = create_buffer();
 	if (err)
