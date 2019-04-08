@@ -92,6 +92,32 @@ static void cleanup_buffer(void)
 	msg_size = 0;
 }
 
+static int create_procfs(void)
+{
+	proc_dir = proc_mkdir(DEV_NAME, NULL);
+
+	if (proc_dir == NULL)
+		return -EFAULT;
+	proc_file = proc_create(PROC_FNAME, 0444, proc_dir, &procfs_fops);
+
+	if (proc_file == NULL)
+		return -EFAULT;
+	return 0;
+}
+
+static void cleanup_procfs(void)
+{
+	if (proc_file) {
+		remove_proc_entry(PROC_FNAME, proc_dir);
+		proc_file = NULL;
+	}
+	if (proc_dir) {
+		remove_proc_entry(DEV_NAME, NULL);
+		proc_dir = NULL;
+	}
+}
+
+
 static ssize_t dev_read(struct file *fileptr, char __user *buf,
 	size_t len, loff_t *offset)
 {
