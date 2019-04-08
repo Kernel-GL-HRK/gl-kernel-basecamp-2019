@@ -121,7 +121,11 @@ error:
 
 static void __exit intercom_exit(void)
 {
-
+	cleanup_buffer();
+	device_destroy(intercom_cls, chrdev);
+	class_destroy(intercom_cls);
+	unregister_chrdev_region(chrdev, 1);
+	pr_info("Exiting intercom\n");
 }
 
 module_init(intercom_init);
