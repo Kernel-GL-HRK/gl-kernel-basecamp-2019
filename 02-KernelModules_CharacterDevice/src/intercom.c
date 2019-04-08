@@ -33,6 +33,14 @@ static dev_t chrdev;
 static struct class *intercom_cls;
 static struct cdev intercom_dev;
 
+static ssize_t dev_read(struct file *, char __user *, size_t, loff_t *);
+static ssize_t dev_write(struct file *, const char __user *, size_t, loff_t *);
+
+static struct file_operations dev_fops = {
+	.read = dev_read,
+	.write = dev_write
+};
+
 static int create_buffer(void)
 {
 	if (buf_size < MIN_BUF_SIZE) {
