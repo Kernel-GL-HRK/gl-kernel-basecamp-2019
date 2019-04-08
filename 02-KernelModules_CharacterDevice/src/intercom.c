@@ -14,13 +14,24 @@
 #include <linux/sysfs.h>
 #include <linux/string.h>
 
+#define DEV_NAME	"intercom"
+#define CLASS_NAME	"GL"
+#define ATTR_NAME	clear_buf
+#define PROC_FNAME	"bufstate"
+#define PROC_BUF_SIZE	32
 #define MIN_BUF_SIZE	1024
+#define ASCII_MIN	0
+#define ASCII_MAX	127
 
 static size_t buf_size = MIN_BUF_SIZE;
 module_param(buf_size, int, 0660);
 
 static char *message;
 static short msg_size;
+
+static dev_t chrdev;
+static struct class *intercom_cls;
+static struct cdev intercom_dev;
 
 static int create_buffer(void)
 {
