@@ -14,6 +14,11 @@
 #include <linux/sysfs.h>
 #include <linux/string.h>
 
+#define MIN_BUF_SIZE	1024
+
+static size_t buf_size = MIN_BUF_SIZE;
+module_param(buf_size, int, 0660);
+
 static int __init intercom_init(void)
 {
 	return 0;
