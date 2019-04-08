@@ -67,6 +67,15 @@ static int __init intercom_init(void)
 {
 	int err;
 
+	pr_info("Intercom: Initializing kernel module\n");
+	err = alloc_chrdev_region(&chrdev, 0, 1, DEV_NAME);
+
+	if (err < 0) {
+		pr_alert("Failed to register dev major number\n");
+		return err;
+	}
+	pr_info("Major number registered correctly [%d]\n", MAJOR(chrdev));
+
 	err = create_buffer();
 	if (err)
 		goto error;
