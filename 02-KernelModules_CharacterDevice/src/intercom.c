@@ -25,6 +25,8 @@
 
 static size_t buf_size = MIN_BUF_SIZE;
 module_param(buf_size, int, 0660);
+static char proc_buffer[PROC_BUF_SIZE];
+static const char fmt_str[PROC_BUF_SIZE] = "Buff state: %u/%u bytes\n";
 
 static char *message;
 static short msg_size;
@@ -32,6 +34,9 @@ static short msg_size;
 static dev_t chrdev;
 static struct class *intercom_cls;
 static struct cdev intercom_dev;
+
+static struct proc_dir_entry *proc_dir;
+static struct proc_dir_entry *proc_file;
 
 static ssize_t dev_read(struct file *, char __user *, size_t, loff_t *);
 static ssize_t dev_write(struct file *, const char __user *, size_t, loff_t *);
