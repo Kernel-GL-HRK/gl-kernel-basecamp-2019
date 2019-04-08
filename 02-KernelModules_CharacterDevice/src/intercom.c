@@ -65,7 +65,18 @@ static void cleanup_buffer(void)
 
 static int __init intercom_init(void)
 {
+	int err;
+
+	err = create_buffer();
+	if (err)
+		goto error;
+
 	return 0;
+
+error:
+	pr_err("Failed to load module\n");
+	cleanup_buffer();
+	return err;
 }
 
 static void __exit intercom_exit(void)
