@@ -100,6 +100,35 @@ static ssize_t dev_read(struct file *fileptr, char __user *buf,
 	return status;
 }
 
+static ssize_t dev_write(struct file *fileptr, const char __user *buf,
+	size_t len, loff_t *offset)
+{
+	size_t msg_len;
+	ssize_t status;
+
+	status = string_checker(buf);
+	if (status < 0) {
+		pr_err("You should use only ASCII strings\n");
+		return status;
+	}
+
+	if (len > buf_size) {
+		pr_warn("Redusing message length from %u to %u bytes\n",
+			len, buf_size);
+		msg_len = buf_size;
+	} else
+		msg_len = len;
+	status = simple_write_to_buffer(message, msg_len, offset, buf, len);
+
+	if (status < 0)
+		pr_err("Failed to write %u bytes\n", msg_len);
+	else {
+		pr_notice("Written %u bytes\n", status);
+		msg_size = status;
+	}
+	return status;
+}
+
 static int __init intercom_init(void)
 {
 	int err;
