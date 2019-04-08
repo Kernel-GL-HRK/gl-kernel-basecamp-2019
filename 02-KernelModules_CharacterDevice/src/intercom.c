@@ -41,6 +41,10 @@ static struct proc_dir_entry *proc_file;
 static ssize_t dev_read(struct file *, char __user *, size_t, loff_t *);
 static ssize_t dev_write(struct file *, const char __user *, size_t, loff_t *);
 static ssize_t procfs_read(struct file *, char __user *, size_t, loff_t *);
+static ssize_t sysfs_show(struct class *, struct class_attribute *, char *);
+static ssize_t sysfs_store(struct class *, struct class_attribute *, const char *, size_t);
+
+static struct class_attribute sysfs_attr = __ATTR(ATTR_NAME, 0664, sysfs_show, sysfs_store);
 
 static struct file_operations dev_fops = {
 	.read = dev_read,
