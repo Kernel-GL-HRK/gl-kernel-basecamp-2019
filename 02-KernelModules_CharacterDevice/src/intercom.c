@@ -48,6 +48,18 @@ static int intercom_uevent(struct device *dev, struct kobj_uevent_env *env)
 	return 0;
 }
 
+static int string_checker(const char *string)
+{
+	int i;
+	int len = strlen(string);
+
+	for (i = 0; i < len; i++) {
+		if (string[i] < ASCII_MIN)
+			return -EINVAL;
+	}
+	return 0;
+}
+
 static int create_buffer(void)
 {
 	if (buf_size < MIN_BUF_SIZE) {
