@@ -40,10 +40,15 @@ static struct proc_dir_entry *proc_file;
 
 static ssize_t dev_read(struct file *, char __user *, size_t, loff_t *);
 static ssize_t dev_write(struct file *, const char __user *, size_t, loff_t *);
+static ssize_t procfs_read(struct file *, char __user *, size_t, loff_t *);
 
 static struct file_operations dev_fops = {
 	.read = dev_read,
 	.write = dev_write
+};
+
+static struct file_operations procfs_fops = {
+	.read = procfs_read,
 };
 
 static int intercom_uevent(struct device *dev, struct kobj_uevent_env *env)
