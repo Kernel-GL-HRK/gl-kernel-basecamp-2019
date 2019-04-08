@@ -1,4 +1,5 @@
-#pragma once
+#ifndef SYS_INT
+#define SYS_INT
 #include <linux/kobject.h> // for kobj and kobj_create
 #include <linux/sysfs.h> // for sysfs_create_file
 #include "Create_device.h"
@@ -22,3 +23,5 @@ void init_sys(void){
     kobj_dir = kobject_create_and_add(SYS_DIR_NAME, NULL);
     sysfs_create_file(kobj_dir, &file_attr.attr);
 }
+#endif
+

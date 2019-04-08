@@ -1,4 +1,5 @@
-#pragma once
+#ifndef PROC_INT
+#define PROC_INT
 #include "Create_device.h"
 #include <linux/proc_fs.h>
 
@@ -34,4 +35,5 @@ static void init_proc(void)
     proc_dir = proc_mkdir(PROC_DIR_NAME, NULL);
     proc_info_file = proc_create(PROC_FILE_NAME, S_IRUGO, proc_dir, &proc_ops);
 }
+#endif
 

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CREATE_DEV
+#define CREATE_DEV
 #include <linux/fs.h> //for getting free MAJOR and MINOR
 #include <linux/cdev.h> //char_dev creation
 #include <linux/types.h> //for dev_t
@@ -92,3 +93,5 @@ ssize_t dev_write (struct file *file_p, const char __user *usr_buffer, size_t le
         printk(KERN_DEBUG "Wrote %d bytes, my buffer size now is: %d\n", len, data_size);
         return ret;
 }
+#endif
+

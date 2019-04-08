@@ -1,4 +1,5 @@
-#pragma once
+#ifndef MEMORY_MAN
+#define MEMORY_MAN
 #include <linux/moduleparam.h>
 #include <linux/kernel.h>
 #include <linux/stat.h>
@@ -29,3 +30,5 @@ static void delete_buffer(void){
     }
     data_size = 0;
 }
+#endif
+
