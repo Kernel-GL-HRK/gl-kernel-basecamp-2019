@@ -12,9 +12,9 @@
 #define MODULE_NAME 	"ChD"
 #endif
 
-#define BUFFER_SIZE 		1024 
+#define BUFFER_SIZE	1024 
 #define DEVICE_NAME 	"charDevice"
-#define CLASS_NAME		"chDClass"
+#define CLASS_NAME	"chDClass"
 #define PROC_DIRECTORY 	"charDevice"
 #define PROC_FILENAME 	"chd"
 
