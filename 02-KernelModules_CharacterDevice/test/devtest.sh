@@ -15,3 +15,10 @@ if [[ ! -c $DEVICE || ! -f $PROCFS || ! -f $SYSFS ]]
 fi
 
 chmod 666 $DEVICE
+
+printf "\n### Testing procfs interface ###\n"
+cat $PROCFS
+echo "Hello Linux Kernel Modules World" > $DEVICE
+cat $PROCFS
+cat $DEVICE
+cat $PROCFS
