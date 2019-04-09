@@ -13,3 +13,5 @@ if [[ ! -c $DEVICE || ! -f $PROCFS || ! -f $SYSFS ]]
 	then echo "Error! Module not loaded"
 	exit -1
 fi
+
+chmod 666 $DEVICE
