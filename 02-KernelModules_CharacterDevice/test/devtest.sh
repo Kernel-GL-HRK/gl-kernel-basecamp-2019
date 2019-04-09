@@ -28,3 +28,6 @@ echo "Testing clearance of buffer with sysfs interface" > $DEVICE
 cat $PROCFS
 cat $SYSFS
 cat $PROCFS
+
+printf "\n### Testing for ASCII check ###\n"
+dd if=/dev/urandom of=$DEVICE bs=512 count=4
