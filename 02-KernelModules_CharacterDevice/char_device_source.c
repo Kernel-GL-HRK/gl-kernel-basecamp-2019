@@ -43,7 +43,8 @@ static struct file_operations proc_fops = {
 
 //===Buffer operations===
 
-static int buffer_create(void){
+static int buffer_create(void)
+{
     data_buff = kzalloc(buffer_size+buffer_increase, GFP_KERNEL);
 
     if (NULL == data_buff) 
@@ -52,7 +53,8 @@ static int buffer_create(void){
     return 0;
 }
 
-static void buffer_clean(void){
+static void buffer_clean(void)
+{
     if (data_buff) {
         kfree(data_buff);
         data_buff = NULL;
@@ -61,18 +63,15 @@ static void buffer_clean(void){
 
 //===/sys file operations===
 
-static ssize_t sysfs_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buffer, size_t len){
-	
+static ssize_t sysfs_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buffer, size_t len)
+{
 	sscanf(buffer, "%d\n", &clear_memory);
 	printk(KERN_INFO "ChD: clear_memory now = %d\n", clear_memory);
 	
 	if(clear_memory){
-<<<<<<< HEAD
 		memset(data_buff, 0, (int) (sizeof data_buff));
-=======
 		kfree(data_buff);
 		data_buff = kzalloc(buffer_size+buffer_increase, GFP_KERNEL);
->>>>>>> CharDevHomework_TestScript
 		used_memory=0;
 		printk(KERN_INFO "ChD: Cleared memory\n");
 	}
@@ -83,7 +82,8 @@ static struct kobj_attribute sysfs_attribute =__ATTR(clear_memory, 0220, NULL, s
 
 //===/proc file operations===
 
-static int create_proc(void){
+static int create_proc(void)
+{
     proc_dir = proc_mkdir(PROC_DIRECTORY, NULL);
     if (NULL == proc_dir)
         return -EFAULT;
@@ -96,7 +96,8 @@ static int create_proc(void){
 }
 
 
-static void cleanup_proc(void){
+static void cleanup_proc(void)
+{
     if (proc_file)
     {
         remove_proc_entry(PROC_FILENAME, proc_dir);
@@ -109,9 +110,8 @@ static void cleanup_proc(void){
     }
 }
 
-static int proc_read(struct file *filp, char *buffer, size_t len, loff_t *offset ){
-	
-
+static int proc_read(struct file *filp, char *buffer, size_t len, loff_t *offset )
+{
 	int result;
 	char msg[124];
 	
@@ -135,7 +135,8 @@ static int proc_read(struct file *filp, char *buffer, size_t len, loff_t *offset
 
 //===/dev file operations===
 
-int dev_open(struct inode *inode, struct file *filp){	
+int dev_open(struct inode *inode, struct file *filp)
+{
 	if(is_open){
 		printk(KERN_ERR "ChD: Failed to open - device is busy");
 		return -EBUSY;
@@ -144,12 +145,14 @@ int dev_open(struct inode *inode, struct file *filp){
 	return 0;
 }
 
-int dev_release(struct inode *inode, struct file *filp){
+int dev_release(struct inode *inode, struct file *filp)
+{
 	is_open = 0;
 	return 0;
 }
 
-ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *offset){
+ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *offset)
+{
 	ssize_t retval = 0;
 
 	int remain = buffer_size - (int) (*offset);
@@ -172,8 +175,8 @@ ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *offset){
 		return retval;
 }
 
-ssize_t dev_write(struct file *filep, const char *buffer, size_t len, loff_t *offset){
-
+ssize_t dev_write(struct file *filep, const char *buffer, size_t len, loff_t *offset)
+{
 	int error = 0;
 	int remain = buffer_size - (int) (*offset);
 	
@@ -207,8 +210,8 @@ static struct file_operations fops = {
 
 //===init/exit functions===
 
-static int __init ChD_init(void){
-	
+static int __init ChD_init(void)
+{
 	int err;
 	
 	printk(KERN_INFO "Loading module...");
@@ -244,7 +247,8 @@ static int __init ChD_init(void){
 
 }
 
-static void __exit ChD_exit(void){
+static void __exit ChD_exit(void)
+{
 	kobject_put(chd_kobject);
 	
 	cleanup_proc();

@@ -4,7 +4,7 @@ TARGET = character_device
 ifneq ($(KERNELRELEASE),)
 
 obj-m := $(TARGET).o
-$(TARGET)-objs := main.o
+$(TARGET)-objs := char_device_source.o
 
 else
 
