@@ -22,3 +22,9 @@ echo "Hello Linux Kernel Modules World" > $DEVICE
 cat $PROCFS
 cat $DEVICE
 cat $PROCFS
+
+printf "\n### Testing sysfs interface ###\n"
+echo "Testing clearance of buffer with sysfs interface" > $DEVICE
+cat $PROCFS
+cat $SYSFS
+cat $PROCFS
