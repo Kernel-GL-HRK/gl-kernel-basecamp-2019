@@ -261,3 +261,6 @@ module_init(ChD_init);
 module_exit(ChD_exit);
 
 MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Bogdan Shchogolev <bogdan993000@gmail.com>");
+MODULE_DESCRIPTION("Simple character device module");
+MODULE_VERSION("1.0");
