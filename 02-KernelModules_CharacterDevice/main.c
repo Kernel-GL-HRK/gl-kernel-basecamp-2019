@@ -67,7 +67,12 @@ static ssize_t sysfs_store(struct kobject *kobj, struct kobj_attribute *attr, co
 	printk(KERN_INFO "ChD: clear_memory now = %d\n", clear_memory);
 	
 	if(clear_memory){
+<<<<<<< HEAD
 		memset(data_buff, 0, (int) (sizeof data_buff));
+=======
+		kfree(data_buff);
+		data_buff = kzalloc(buffer_size+buffer_increase, GFP_KERNEL);
+>>>>>>> CharDevHomework_TestScript
 		used_memory=0;
 		printk(KERN_INFO "ChD: Cleared memory\n");
 	}
@@ -264,3 +269,4 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Bogdan Shchogolev <bogdan993000@gmail.com>");
 MODULE_DESCRIPTION("Simple character device module");
 MODULE_VERSION("1.0");
+
