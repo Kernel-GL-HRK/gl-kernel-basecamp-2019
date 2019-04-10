@@ -41,6 +41,25 @@ static struct file_operations proc_fops = {
 	.read  = proc_read,
 };
 
+//===Device creation===
+
+static int create_device(void)
+{
+	int retval = 0;
+	
+	chdClass = class_create(THIS_MODULE, CLASS_NAME);
+	
+	if(NULL == chdClass)
+		retval = -1;
+	
+	chDevice = device_create(chdClass, NULL, MKDEV(major, 0), NULL, DEVICE_NAME);
+	
+	if(NULL == chDevice)
+		retval = -1;
+	
+	return retval;
+}
+
 //===Buffer operations===
 
 static int buffer_create(void)
@@ -226,23 +245,38 @@ static int __init ChD_init(void)
 		printk(KERN_INFO "ChD: Registered major number %d\n", major);
 	}
 	
-	chdClass = class_create(THIS_MODULE, CLASS_NAME);
+	err = create_device();
 
-	chDevice = device_create(chdClass, NULL, MKDEV(major, 0), NULL, DEVICE_NAME);
-
-	printk(KERN_INFO "ChD: Device initialized succesfully\n");
-
-	buffer_create();
+	if(err){
+		printk(KERN_ALERT "ChD: Failed to register device\n");
+		return err;
+	}
 	
-	create_proc();
+	err = buffer_create();
+	
+	if(err){
+		printk(KERN_ALERT "ChD: Failed to allocate memory\n");
+		return err;
+	}
+	
+	err = create_proc();
+	
+	if(err){
+		printk(KERN_ALERT "ChD: Failed to create procfs interface\n");
+		return err;
+	}
 	
 	chd_kobject = kobject_create_and_add(MODULE_NAME, kernel_kobj);
 	
 	err = sysfs_create_file(chd_kobject, &sysfs_attribute.attr);
 	
-	if(err)
+	if(err){
+		printk(KERN_ALERT "ChD: Failed to create sysfs interface\n");
 		return err;
-
+	}
+	
+	printk(KERN_INFO "ChD: Device initialized succesfully\n");
+		
 	return 0;
 
 }
