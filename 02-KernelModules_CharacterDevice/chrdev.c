@@ -10,10 +10,13 @@
 #include <linux/device.h>
 #include <linux/err.h>
 
+#include <linux/kobject.h>
+#include <linux/sysfs.h>
+
 #define CLASS_NAME	"chrdev"
 #define DEVICE_NAME	"chrdev_example"
 
-
+static int error;
 static int BUFFER_SIZE=1024;
 static int major = 0; 
 static int minor = 0; 
@@ -22,6 +25,7 @@ module_param(major, int, S_IRUGO);
 module_param(minor, int, S_IRUGO);
 module_param(count, int, S_IRUGO);
 module_param(BUFFER_SIZE, int, S_IRUGO);
+
  
 static struct class *pclass;
 static struct device *pdev;
@@ -30,6 +34,26 @@ static int data_size;
 static unsigned char *data_buffer=NULL;
 
 static int is_open;
+
+//sysfs
+static int cleanup=0;
+static struct kobject *example_kobject;
+
+
+static ssize_t sysfs_store1(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+        sscanf(buf, "%du", &cleanup);
+        pr_info("sysfs cleanup value %d\n", cleanup);
+        if (cleanup){
+            memset(data_buffer, BUFFER_SIZE, sizeof(*data_buffer));
+        }
+        return count;
+}
+
+static struct kobj_attribute sysfs_attribute =__ATTR(cleanup, 0220, NULL, sysfs_store1);
+
+//sysfs
+
 
 static int dev_open(struct inode *inodep, struct file *filep)
 {
@@ -55,7 +79,7 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
 	int ret;
 	pr_info("chrdev: read from file %s\n", filep->f_path.dentry->d_iname);
 	if (len > data_size) len = data_size;
-	ret = raw_copy_to_user(buffer, data_buffer, len);
+	ret = copy_to_user(buffer, data_buffer, len);
 	if (ret) {
 		pr_err("chrdev: copy_to_user failed: %d\n", ret);
 		return -EFAULT;
@@ -70,7 +94,7 @@ static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, lof
 	pr_info("chrdev: write to file %s\n", filep->f_path.dentry->d_iname);
 	data_size = len;
 	if (data_size > BUFFER_SIZE) data_size = BUFFER_SIZE;
-	ret = raw_copy_from_user(data_buffer, buffer, data_size);
+	ret = copy_from_user(data_buffer, buffer, data_size);
 	if (ret) {
 		pr_err("chrdev: copy_from_user failed: %d\n", ret);
 		return -EFAULT;
@@ -119,11 +143,24 @@ static int chrdev_init(void)
 		return PTR_ERR(pdev);
 	}
 	pr_info("chrdev: device node created successfully\n");
+
+	example_kobject = kobject_create_and_add(DEVICE_NAME, kernel_kobj);
+    	if(!example_kobject) {
+        pr_debug("failed to create kobject \n");
+        return -ENOMEM;
+    	}
+    	error = sysfs_create_file(example_kobject, &sysfs_attribute.attr);
+    	if (error) {
+        pr_debug("failed to create  file in /sys/kernel/%s \n", DEVICE_NAME);
+    	}
+    	pr_info("create the file in /sys/kernel/%s \n", DEVICE_NAME);
+
 	pr_info("chrdev: module loaded\n");
 	return 0;
 }
 static void chrdev_exit(void)
 {
+	kobject_put(example_kobject);
 	device_destroy(pclass, MKDEV(major, 0));
 	class_destroy(pclass);
 	unregister_chrdev(major, DEVICE_NAME);
