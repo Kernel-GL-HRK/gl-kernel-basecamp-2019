@@ -14,14 +14,38 @@
 #define PROC_FILENAME "MyCharDev"
 #define NAME_SYSCLASS "chardev"
 #define SIZE_STRING 10
+#define BUFFER_SIZE 1024
 
 static struct proc_dir_entry *proc_file;
 static dev_t first;
 static size_t countFile = 1;
-static size_t all_memory = 1024;
+static size_t all_memory = 0;
 static char size_memory[SIZE_STRING];
+static char* dev_buffer;
 static struct class *class_device;
 struct device *dev_ret;
+static struct cdev c_dev;
+
+
+
+static int create_buffer(void)
+{
+    dev_buffer = kmalloc(all_memory, GFP_KERNEL);
+    if (NULL == dev_buffer)
+        return -ENOMEM;
+    memset(dev_buffer, 0, all_memory);
+    return 0;
+}
+
+
+static void cleanup_buffer(void)
+{
+    if (dev_buffer) {
+        memset(dev_buffer, 0, all_memory);
+        kfree(dev_buffer);
+        dev_buffer = NULL;
+    }
+}
 
 
 static ssize_t proc_read(struct file *f, char __user *buffer, size_t len, loff_t *off)
@@ -31,43 +55,86 @@ static ssize_t proc_read(struct file *f, char __user *buffer, size_t len, loff_t
     return simple_read_from_buffer(buffer, len, off, size_memory, len);
 }
 
-static struct file_operations fops =
+static int dev_open(struct inode *i, struct file *f)
+{
+    printk(KERN_INFO "Driver: open()\n");
+    return 0;
+}
+static int dev_close(struct inode *i, struct file *f)
+{
+    printk(KERN_INFO "Driver: close()\n");
+    return 0;
+}
+static ssize_t dev_read(struct file *f, char __user *buf, size_t len, loff_t *off)
+{
+    printk(KERN_INFO "Driver: read()\n");
+    return 0;
+}
+static ssize_t dev_write(
+                         struct file *f, const char __user *buf, size_t len, loff_t *off)
+{
+    printk(KERN_INFO "Driver: write()\n");
+    return len;
+}
+static struct file_operations proc_fops =
 {
     .read = proc_read,
+};
+
+static struct file_operations dev_fops =
+{
+    .owner = THIS_MODULE,
+    .open = dev_open,
+    .release = dev_close,
+    .read = dev_read,
+    .write = dev_write
 };
 
 static int __init dev_init(void) /* Constructor */
 {
     printk(KERN_INFO "Start device");
     if ((alloc_chrdev_region(&first, 0, countFile, PROC_FILENAME)) < 0) {
-        return -ENOMEM;
+        goto fail;
     }
     printk(KERN_INFO "Registered: <%d %d>\n", MAJOR(first),MINOR(first));
-    proc_file = proc_create(PROC_FILENAME, S_IFREG | S_IRUGO | S_IWUGO, NULL, &fops);
+    proc_file = proc_create(PROC_FILENAME, S_IFREG | S_IRUGO | S_IWUGO, NULL, &proc_fops);
     if(proc_file == NULL) {
-        unregister_chrdev_region(first, countFile);
-        return -ENOMEM;
+        goto fail;
     }
-    if (IS_ERR(class_device = class_create(THIS_MODULE, NAME_SYSCLASS)))
-    {
-        remove_proc_entry(PROC_FILENAME, NULL);
-        unregister_chrdev_region(first, countFile);
-        return PTR_ERR(class_device);
+    printk(KERN_INFO "File /proc/MyCharDev was created\n");
+    
+    if (IS_ERR(class_device = class_create(THIS_MODULE, NAME_SYSCLASS))) {
+        goto fail;
     }
-    if (IS_ERR(dev_ret = device_create(class_device, NULL, first, NULL, NAME_SYSCLASS)))
-    {
-        class_destroy(class_device);
-        remove_proc_entry(PROC_FILENAME, NULL);
-        unregister_chrdev_region(first, countFile);
-        return PTR_ERR(dev_ret);
+    printk(KERN_INFO "Class /sys/class/chardev was created\n");
+    if (IS_ERR(dev_ret = device_create(class_device, NULL, first, NULL, NAME_SYSCLASS))) {
+        goto fail;
+    }
+    printk(KERN_INFO "File /dev/chardev was created\n");
+    cdev_init(&c_dev, &dev_fops);
+    if (cdev_add(&c_dev, first, countFile) < 0){
+        goto fail;
+    }
+    all_memory += BUFFER_SIZE;
+    if (create_buffer() < 0) {
+        goto fail;
     }
     return 0;
+fail:
+    cdev_del(&c_dev);
+    device_destroy(class_device, first);
+    class_destroy(class_device);
+    remove_proc_entry(PROC_FILENAME, NULL);
+    unregister_chrdev_region(first, countFile);
+    return -ENOMEM;
 }
 
 static void __exit dev_exit(void) /* Destructor */
 {
-    printk(KERN_INFO "End device");
     
+    printk(KERN_INFO "End device");
+    cleanup_buffer();
+    cdev_del(&c_dev);
     device_destroy(class_device, first);
     class_destroy(class_device);
     remove_proc_entry(PROC_FILENAME, NULL);
