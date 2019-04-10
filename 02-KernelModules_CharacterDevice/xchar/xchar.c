@@ -4,6 +4,9 @@
 #include <linux/err.h>
 #include <linux/uaccess.h>
 
+/* kfree(), kzalloc() */
+#include <linux/slab.h>
+
 #define CLASS_NAME "xchar"
 #define DEVICE_NAME "xchar_device"
 #define BUFFER_SIZE 1024
@@ -15,7 +18,7 @@ static int major;
 static int is_open;
 
 static size_t data_size;
-static unsigned char data_buffer[BUFFER_SIZE];
+static unsigned char *data_buffer = NULL;
 
 static int dev_open(struct inode *inodep, struct file *filep)
 {
@@ -113,6 +116,15 @@ static int xchar_init(void)
 	pclass->devnode = xchar_devnode;
 	pr_info("xchar: device class created successfully\n");
 
+	data_buffer = kzalloc(BUFFER_SIZE * sizeof(*data_buffer), GFP_KERNEL);
+	if (!data_buffer) {
+		class_destroy(pclass);
+		unregister_chrdev(major, DEVICE_NAME);
+		pr_info("xchar: buffer allocation failed\n");
+		return -ENOMEM;
+	}
+	pr_info("xchar: buffer allocated successfully\n");
+
 	pdev = device_create(pclass, NULL, MKDEV(major, 0), NULL,
 			     CLASS_NAME "0");
 	if (IS_ERR(pdev)) {
@@ -132,7 +144,10 @@ static void xchar_exit(void)
 	device_destroy(pclass, MKDEV(major, 0));
 	class_destroy(pclass);
 	unregister_chrdev(major, DEVICE_NAME);
-
+	if (data_buffer) {
+		kfree(data_buffer);
+		data_buffer = NULL;
+	}
 	pr_info("xchar: module exited\n");
 }
 
