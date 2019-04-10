@@ -13,7 +13,7 @@
 
 #define PROC_FILENAME "MyCharDev"
 #define NAME_SYSCLASS "chardev"
-#define SIZE_STRING 10
+#define SIZE_STRING 20
 #define BUFFER_SIZE 1024
 
 static struct proc_dir_entry *proc_file;
@@ -52,7 +52,7 @@ static void cleanup_buffer(void)
 
 static ssize_t proc_read(struct file *f, char __user *buffer, size_t len, loff_t *off)
 {
-    sprintf(size_memory, "%u\n", all_memory);
+    sprintf(size_memory, "%u %u\n", all_memory, all_memory - full_memory);
     len = SIZE_STRING;
     return simple_read_from_buffer(buffer, len, off, size_memory, len);
 }
