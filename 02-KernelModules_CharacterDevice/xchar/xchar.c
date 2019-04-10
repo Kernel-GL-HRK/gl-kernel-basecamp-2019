@@ -6,10 +6,17 @@
 
 /* kfree(), kzalloc() */
 #include <linux/slab.h>
+/* command-line args */
+#include <linux/moduleparam.h>
 
 #define CLASS_NAME "xchar"
 #define DEVICE_NAME "xchar_device"
-#define BUFFER_SIZE 1024
+
+/**
+ *  Module parameter, eg: insmod ./xchar.ko buffer=1024
+ */
+static unsigned int buffer_size = 1024;
+module_param(buffer_size, uint, S_IRUGO);
 
 static struct class *pclass;
 static struct device *pdev;
@@ -68,8 +75,8 @@ static ssize_t dev_write(struct file *filep, const char *buffer, size_t len,
 	pr_info("xchar: write to file %s\n", filep->f_path.dentry->d_iname);
 
 	data_size = len;
-	if (data_size > BUFFER_SIZE)
-		data_size = BUFFER_SIZE;
+	if (data_size > buffer_size)
+		data_size = buffer_size;
 
 	ret = copy_from_user(data_buffer, buffer, data_size);
 	if (ret) {
@@ -116,14 +123,14 @@ static int xchar_init(void)
 	pclass->devnode = xchar_devnode;
 	pr_info("xchar: device class created successfully\n");
 
-	data_buffer = kzalloc(BUFFER_SIZE * sizeof(*data_buffer), GFP_KERNEL);
+	data_buffer = kzalloc(buffer_size * sizeof(*data_buffer), GFP_KERNEL);
 	if (!data_buffer) {
 		class_destroy(pclass);
 		unregister_chrdev(major, DEVICE_NAME);
 		pr_info("xchar: buffer allocation failed\n");
 		return -ENOMEM;
 	}
-	pr_info("xchar: buffer allocated successfully\n");
+	pr_info("xchar: buffer allocated successfully with size = %d\n", buffer_size);
 
 	pdev = device_create(pclass, NULL, MKDEV(major, 0), NULL,
 			     CLASS_NAME "0");
@@ -155,6 +162,6 @@ module_init(xchar_init);
 module_exit(xchar_exit);
 
 MODULE_AUTHOR("xone <xone@ukr.net>");
-MODULE_DESCRIPTION("Character device simple driver");
+MODULE_DESCRIPTION("Simple character device driver");
 MODULE_LICENSE("GPL");
 MODULE_VERSION("0.1");

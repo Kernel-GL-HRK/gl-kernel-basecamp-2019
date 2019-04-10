@@ -9,3 +9,13 @@ all:
 
 clean:
 	$(MAKE) -C $(KDIR) M=$(PWD) clean
+
+install:
+	sudo insmod xchar.ko
+
+remove:
+	sudo rmmod xchar
+
+test:
+	echo 1 2 3 4 5 > /dev/xchar0
+	cat /dev/xchar0
