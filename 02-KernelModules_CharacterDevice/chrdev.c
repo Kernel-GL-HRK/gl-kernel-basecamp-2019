@@ -13,6 +13,9 @@
 #include <linux/kobject.h>
 #include <linux/sysfs.h>
 
+#include <linux/proc_fs.h>
+#include <linux/seq_file.h>
+
 #define CLASS_NAME	"chrdev"
 #define DEVICE_NAME	"chrdev_example"
 
@@ -20,10 +23,9 @@ static int error;
 static int BUFFER_SIZE=1024;
 static int major = 0; 
 static int minor = 0; 
-//static int count = 1; 
+ 
 module_param(major, int, S_IRUGO);
 module_param(minor, int, S_IRUGO);
-module_param(count, int, S_IRUGO);
 module_param(BUFFER_SIZE, int, S_IRUGO);
 
  
@@ -54,6 +56,26 @@ static struct kobj_attribute sysfs_attribute =__ATTR(cleanup, 0220, NULL, sysfs_
 
 //sysfs
 
+//procfs
+
+static int dev_proc_show(struct seq_file *m, void *v) {
+  seq_printf(m, "Buffer size = %d\nData length = %d\n", BUFFER_SIZE, data_size);
+  return 0;
+}
+
+static int dev_proc_open(struct inode *inode, struct  file *file) {
+  return single_open(file, dev_proc_show, NULL);
+}
+
+static const struct file_operations dev_proc_fops = {
+  .owner = THIS_MODULE,
+  .open = dev_proc_open,
+  .read = seq_read,
+  .llseek = seq_lseek,
+  .release = single_release,
+};
+
+//procfs
 
 static int dev_open(struct inode *inodep, struct file *filep)
 {
@@ -63,6 +85,9 @@ static int dev_open(struct inode *inodep, struct file *filep)
 	}
 
 	is_open = 1;
+
+	proc_create(DEVICE_NAME, 0, NULL, &dev_proc_fops);
+
 	pr_info("chrdev: device opened\n");
 	return 0;
 }
@@ -79,7 +104,7 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
 	int ret;
 	pr_info("chrdev: read from file %s\n", filep->f_path.dentry->d_iname);
 	if (len > data_size) len = data_size;
-	ret = copy_to_user(buffer, data_buffer, len);
+	ret =raw_copy_to_user(buffer, data_buffer, len);
 	if (ret) {
 		pr_err("chrdev: copy_to_user failed: %d\n", ret);
 		return -EFAULT;
@@ -94,7 +119,7 @@ static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, lof
 	pr_info("chrdev: write to file %s\n", filep->f_path.dentry->d_iname);
 	data_size = len;
 	if (data_size > BUFFER_SIZE) data_size = BUFFER_SIZE;
-	ret = copy_from_user(data_buffer, buffer, data_size);
+	ret =raw_copy_from_user(data_buffer, buffer, data_size);
 	if (ret) {
 		pr_err("chrdev: copy_from_user failed: %d\n", ret);
 		return -EFAULT;
@@ -152,6 +177,7 @@ static int chrdev_init(void)
     	error = sysfs_create_file(example_kobject, &sysfs_attribute.attr);
     	if (error) {
         pr_debug("failed to create  file in /sys/kernel/%s \n", DEVICE_NAME);
+	return -ENOMEM;
     	}
     	pr_info("create the file in /sys/kernel/%s \n", DEVICE_NAME);
 
@@ -161,6 +187,8 @@ static int chrdev_init(void)
 static void chrdev_exit(void)
 {
 	kobject_put(example_kobject);
+	remove_proc_entry(DEVICE_NAME, NULL);
+	
 	device_destroy(pclass, MKDEV(major, 0));
 	class_destroy(pclass);
 	unregister_chrdev(major, DEVICE_NAME);
