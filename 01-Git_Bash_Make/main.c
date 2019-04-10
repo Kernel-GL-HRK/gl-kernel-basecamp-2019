@@ -16,5 +16,9 @@ int main()
 	}
 
 	int comp = rand() % 10;
+	if (comp == num)
+		printf("you win!\n");
+	else
+		printf("you lose!\n");
 	return 0;
 }
