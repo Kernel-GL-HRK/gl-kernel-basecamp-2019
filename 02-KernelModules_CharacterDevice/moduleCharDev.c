@@ -25,11 +25,13 @@ static char* dev_buffer;
 static struct class *class_device;
 struct device *dev_ret;
 static struct cdev c_dev;
+static size_t full_memory = 0;
 
 
 
 static int create_buffer(void)
 {
+    all_memory += BUFFER_SIZE;
     dev_buffer = kmalloc(all_memory, GFP_KERNEL);
     if (NULL == dev_buffer)
         return -ENOMEM;
@@ -67,13 +69,31 @@ static int dev_close(struct inode *i, struct file *f)
 }
 static ssize_t dev_read(struct file *f, char __user *buf, size_t len, loff_t *off)
 {
-    printk(KERN_INFO "Driver: read()\n");
-    return 0;
+    int ret;
+    printk(KERN_INFO "chrdev: read from file %s\n", f->f_path.dentry->d_iname);
+    if (len > full_memory) len = full_memory;
+    ret = copy_to_user(buf, dev_buffer, len);
+    if (ret) {
+        printk(KERN_ERR "chrdev: copy_to_user failed: %d\n", ret);
+        return -EFAULT;
+    }
+    full_memory = 0;
+    printk(KERN_INFO "chrdev: %d bytes read\n", len);
+    return len;
 }
 static ssize_t dev_write(
                          struct file *f, const char __user *buf, size_t len, loff_t *off)
 {
-    printk(KERN_INFO "Driver: write()\n");
+    int ret;
+    printk(KERN_INFO "chrdev: write to file %s\n", f->f_path.dentry->d_iname);
+    full_memory = len;
+    if (full_memory > all_memory) full_memory = all_memory;
+    ret = copy_from_user(dev_buffer, buf, full_memory);
+    if (ret) {
+        printk(KERN_ERR "chrdev: copy_from_user failed: %d\n", ret);
+        return -EFAULT;
+    }
+    printk(KERN_INFO "chrdev: %d bytes written\n", full_memory);
     return len;
 }
 static struct file_operations proc_fops =
@@ -115,7 +135,6 @@ static int __init dev_init(void) /* Constructor */
     if (cdev_add(&c_dev, first, countFile) < 0){
         goto fail;
     }
-    all_memory += BUFFER_SIZE;
     if (create_buffer() < 0) {
         goto fail;
     }
