@@ -1,7 +1,10 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
 int main()
 {
+	srand(time(NULL));
 	int num = 0;
 	printf("enter number: ");
 	scanf("%i", &num);
@@ -12,5 +15,6 @@ int main()
 		exit(1);
 	}
 
+	int comp = rand() % 10;
 	return 0;
 }
