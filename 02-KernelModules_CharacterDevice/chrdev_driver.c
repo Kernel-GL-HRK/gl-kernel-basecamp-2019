@@ -23,7 +23,6 @@ unsigned int chrdev_buffer_size = 0;
 module_param(chrdev_buffer_size, uint, S_IRUGO);
 
 struct cdev *cdev;
-
 static char *chrdev_buffer;
 
 /*
@@ -60,15 +59,16 @@ ssize_t chrdev_read(struct file *filp, char __user *buf, size_t count, loff_t *f
 	if (count > remain)
 		count = remain;
 
-	if (raw_copy_from_user(buf, chrdev_buffer + *f_pos, count)) {
+	if (raw_copy_to_user(buf, chrdev_buffer + *f_pos, count)) {
 		retval = -EFAULT;
+		printk(KERN_ERR "chrdev: bad address on copy to user");
 		goto out;
 	}
 	*f_pos += count;
 	retval = count;
 
-  out:
-return retval;
+	out:
+		return retval;
 }
 
 /*
@@ -83,19 +83,21 @@ ssize_t chrdev_write(struct file *filp, const char __user *buf, size_t count, lo
 	int remain = chrdev_buffer_size - (int) (*f_pos); 
 
 	if (count > remain) {
+		printk(KERN_ERR "chrdev: I/O error on write data");
 		return -EIO;
 	}
 
 	if (raw_copy_from_user(chrdev_buffer + *f_pos, buf, count)) {
 		retval = -EFAULT;
+		printk(KERN_ERR "chrdev: bad address on copy from user");
 		goto out;
 	}
 	
 	*f_pos += count;
 	retval = count;
 
-  out:
-return retval;
+	out:
+		return retval;
 }
 
 /*
@@ -117,11 +119,13 @@ void __exit chrdev_exit(void)
 	dev_t devno = MKDEV(chrdev_major, chrdev_minor);
 	if (cdev) {
 		cdev_del(cdev);
+		printk(KERN_INFO "chrdev: cdev removed from the system \n");
 	}
 
-	if (chrdev_buffer) 
+	if (chrdev_buffer){ 
 		kfree(chrdev_buffer);
- 	
+		printk(KERN_INFO "chrdev: memory is free \n");
+	}
 	unregister_chrdev_region(devno, chrdev_nr_devs);
 
 	printk(KERN_INFO "chrdev: exit \n");
@@ -139,7 +143,7 @@ int __init chrdev_init(void)
 	chrdev_major = MAJOR(dev);
 
 	if (result) {
-		printk(KERN_WARNING "chrdev: can't get major %d\n", chrdev_major);
+		printk(KERN_ERR "chrdev: can't get major %d\n", chrdev_major);
 		return result;
 	}
 
@@ -147,22 +151,27 @@ int __init chrdev_init(void)
  	
 	 if (!cdev) {
 		result = -ENOMEM;
+		printk(KERN_ERR "chrdev: cdev is out of memory");
 		goto fail; 
 	}
 	cdev_init(cdev, &chrdev_fops);
-	cdev->owner   = THIS_MODULE;
+	cdev->owner = THIS_MODULE;
 	if (cdev_add(cdev, dev, chrdev_nr_devs)) { 
-		printk(KERN_WARNING "chrdev: cdev_add error \n");
+		printk(KERN_ERR "chrdev: cdev_add error \n");
+		goto fail;
 	}
 	printk(KERN_INFO "chrdev: %d:%d \n", chrdev_major, chrdev_minor);
 
 
 	if(chrdev_buffer_size < MODULE_MIN_BUFF_SIZE){
+		printk(KERN_ERR "chrdev: chrdev_buffer is minimal size 1024 byte");
+		printk(KERN_INFO "chrdev: chrdev_buffer size is set 1024 byte");
 		chrdev_buffer_size = MODULE_MIN_BUFF_SIZE;
 	}
 		chrdev_buffer = kzalloc(chrdev_buffer_size * sizeof (*chrdev_buffer), GFP_KERNEL);
 	if (!chrdev_buffer) {
 		result = -ENOMEM;
+		printk(KERN_ERR "chrdev: chrdev_buffer is out of memory");
 		goto fail;
 	}
 	
@@ -170,7 +179,7 @@ int __init chrdev_init(void)
 	
 	fail:
 		chrdev_exit();
-		printk(KERN_WARNING "chrdev: register error \n");
+		printk(KERN_ERR "chrdev: register error \n");
 		return result;
 }
 
