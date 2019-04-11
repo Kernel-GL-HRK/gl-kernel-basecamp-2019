@@ -13,6 +13,19 @@
 #define MODULE_NAME "chrdev_driver"
 #endif
 
+#define MODULE_MIN_BUFF_SIZE 1000
+
+int chrdev_major = 0;		/* MAJOR */
+int chrdev_minor = 0;		/* MINOR */
+int chrdev_nr_devs = 1;		/* Number device for register */
+
+unsigned int chrdev_buffer_size = 0;	
+module_param(chrdev_buffer_size, uint, S_IRUGO);
+
+struct cdev *cdev;
+
+static char *chrdev_buffer;
+
 /*
  * Open device
  */
@@ -61,7 +74,17 @@ struct file_operations chrdev_fops = {
  */
 void __exit chrdev_exit(void)
 {
+	dev_t devno = MKDEV(chrdev_major, chrdev_minor);
+	if (cdev) {
+		cdev_del(cdev);
+	}
 
+	if (chrdev_buffer) 
+		kfree(chrdev_buffer);
+ 	
+	unregister_chrdev_region(devno, chrdev_nr_devs);
+
+	printk(KERN_INFO "=== chrdev: exit ===\n");
 }
 
 /*
@@ -69,7 +92,46 @@ void __exit chrdev_exit(void)
  */
 int __init chrdev_init(void)
 {
+	int result = 0;
+	dev_t dev = 0;
+
+	result = alloc_chrdev_region(&dev, chrdev_minor, chrdev_nr_devs, MODULE_NAME);
+	chrdev_major = MAJOR(dev);
+
+	if (result) {
+		printk(KERN_WARNING "chrdev: can't get major %d\n", chrdev_major);
+		return result;
+	}
+
+	cdev = cdev_alloc();
+ 	
+	 if (!cdev) {
+		result = -ENOMEM;
+		goto fail; 
+	}
+	cdev_init(cdev, &chrdev_fops);
+	cdev->owner   = THIS_MODULE;
+	if (cdev_add(cdev, dev, chrdev_nr_devs)) { 
+		printk(KERN_WARNING "=== chrdev: cdev_add error ===\n");
+	}
+	printk(KERN_INFO "=== chrdev: %d:%d ===\n", chrdev_major, chrdev_minor);
+
+
+	if(chrdev_buffer_size < MODULE_MIN_BUFF_SIZE){
+		chrdev_buffer_size = MODULE_MIN_BUFF_SIZE;
+	}
+		chrdev_buffer = kzalloc(chrdev_buffer_size * sizeof (*chrdev_buffer), GFP_KERNEL);
+	if (!chrdev_buffer) {
+		result = -ENOMEM;
+		goto fail;
+	}
+	
 	return 0;
+	
+	fail:
+		chrdev_exit();
+		printk(KERN_WARNING "=== chrdev: register error ===\n");
+		return result;
 }
 
 
