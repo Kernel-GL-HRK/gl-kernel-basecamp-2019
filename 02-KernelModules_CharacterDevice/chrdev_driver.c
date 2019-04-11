@@ -6,12 +6,16 @@
 #include <linux/types.h>        /* dev_t */
 #include <linux/cdev.h>
 #include <asm/uaccess.h>        /* copy_*_user */
+#include <linux/proc_fs.h>
 
 #include "chrdev_driver.h"
 
 #ifndef MODULE_NAME
 #define MODULE_NAME "chrdev_driver"
 #endif
+
+#define CLASS_NAME	"chrdev"
+#define FILE_NAME "chrdev_info"
 
 #define MODULE_MIN_BUFF_SIZE 1024
 
@@ -24,6 +28,38 @@ module_param(chrdev_buffer_size, uint, S_IRUGO);
 
 struct cdev *cdev;
 static char *chrdev_buffer;
+static struct class* chrdev_class;
+static struct proc_dir_entry* proc_chrdev_info;
+static ssize_t proc_chrdev_read(struct file *file, char __user *buf, size_t count, loff_t *ppos);
+
+
+
+static struct file_operations chrdev_proc = {
+        .owner = THIS_MODULE,
+        .read = proc_chrdev_read
+};
+
+static ssize_t proc_chrdev_read(struct file *file, char __user *buf, size_t count, loff_t *ppos) 
+{
+        char info_buff[100];
+        int write_len = 0;
+
+        if(*ppos > 0 || count < 100) {
+        	return 0;
+		}
+
+        write_len += sprintf(info_buff, "chrdev buffer size: %d \n\r", chrdev_buffer_size);
+        write_len += sprintf(info_buff + write_len, "used buffer volume: %ld \n\r", strlen(chrdev_buffer));
+
+        if(raw_copy_to_user(buf, info_buff, write_len)) {
+			printk(KERN_ERR "chrdev: bad address on copy to user proc");
+            return -EFAULT;
+		}
+
+        *ppos = write_len;
+        return write_len;
+}
+
 
 /*
  * Open device
@@ -54,10 +90,12 @@ ssize_t chrdev_read(struct file *filp, char __user *buf, size_t count, loff_t *f
 	// number of bytes left to read
 	int remain = chrdev_buffer_size - (int) (*f_pos); 
 	
-	if (remain == 0) 
+	if (remain == 0) {
 		return 0;	
-	if (count > remain)
+	}
+	if (count > remain) {
 		count = remain;
+	}
 
 	if (raw_copy_to_user(buf, chrdev_buffer + *f_pos, count)) {
 		retval = -EFAULT;
@@ -122,10 +160,11 @@ void __exit chrdev_exit(void)
 		printk(KERN_INFO "chrdev: cdev removed from the system \n");
 	}
 
-	if (chrdev_buffer){ 
+	if (chrdev_buffer) { 
 		kfree(chrdev_buffer);
 		printk(KERN_INFO "chrdev: memory is free \n");
 	}
+	remove_proc_entry(FILE_NAME, NULL);
 	unregister_chrdev_region(devno, chrdev_nr_devs);
 
 	printk(KERN_INFO "chrdev: exit \n");
@@ -144,7 +183,7 @@ int __init chrdev_init(void)
 
 	if (result) {
 		printk(KERN_ERR "chrdev: can't get major %d\n", chrdev_major);
-		return result;
+		goto fail;
 	}
 
 	cdev = cdev_alloc();
@@ -156,22 +195,46 @@ int __init chrdev_init(void)
 	}
 	cdev_init(cdev, &chrdev_fops);
 	cdev->owner = THIS_MODULE;
+
+	chrdev_class = class_create(THIS_MODULE, CLASS_NAME);
+
+	if (!chrdev_class) {
+		result = -EEXIST;
+		printk(KERN_ERR "chrdev: failed to create class\n");
+		goto fail;
+	}
+
+	if (!device_create(chrdev_class, NULL, dev, NULL, "chrdev_cdev_%d", chrdev_major)) {
+		result = -EINVAL;
+		printk(KERN_ERR "chrdev: failed to create device\n");
+		goto fail;
+	}
+
 	if (cdev_add(cdev, dev, chrdev_nr_devs)) { 
+		result = -EINVAL;
 		printk(KERN_ERR "chrdev: cdev_add error \n");
 		goto fail;
 	}
 	printk(KERN_INFO "chrdev: %d:%d \n", chrdev_major, chrdev_minor);
 
 
-	if(chrdev_buffer_size < MODULE_MIN_BUFF_SIZE){
+	if (chrdev_buffer_size < MODULE_MIN_BUFF_SIZE) {
 		printk(KERN_ERR "chrdev: chrdev_buffer is minimal size 1024 byte");
 		printk(KERN_INFO "chrdev: chrdev_buffer size is set 1024 byte");
 		chrdev_buffer_size = MODULE_MIN_BUFF_SIZE;
 	}
-		chrdev_buffer = kzalloc(chrdev_buffer_size * sizeof (*chrdev_buffer), GFP_KERNEL);
+	
+	chrdev_buffer = kzalloc(chrdev_buffer_size * sizeof (*chrdev_buffer), GFP_KERNEL);
 	if (!chrdev_buffer) {
 		result = -ENOMEM;
 		printk(KERN_ERR "chrdev: chrdev_buffer is out of memory");
+		goto fail;
+	}
+
+	proc_chrdev_info = proc_create(FILE_NAME, 0, NULL, &chrdev_proc);
+	if (proc_chrdev_info == NULL) {
+		result = -ENOMEM;
+		printk(KERN_ERR "chrdev: proc_create error ");
 		goto fail;
 	}
 	
