@@ -241,3 +241,4 @@ static void __exit chrdev_exit(void)
 
 module_init(chrdev_init);
 module_exit(chrdev_exit);
+

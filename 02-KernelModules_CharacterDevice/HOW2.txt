@@ -1,0 +1,8 @@
+Instructions for testing:
+
+1. Set BUILD_KERNEL variable (location of your kernel)
+1. Compile module using make.
+2. Set MODULE_OBJECT variable (location of module .ko)
+3. Run "script.sh".
+4. Check script output, correct information in brackets.
+
