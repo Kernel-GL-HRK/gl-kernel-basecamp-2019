@@ -2,7 +2,7 @@
 
 Module="character_device.ko"
 
-Module_location="/home/user/$Module"
+Module_location="$MODULE_PATH$Module"
 
 Proc="/proc/charDevice/chd"
 
