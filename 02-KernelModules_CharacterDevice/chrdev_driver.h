@@ -15,3 +15,4 @@ int chrdev_open(struct inode *inode, struct file *filp);
 int chrdev_release(struct inode *inode, struct file *filp);
 
 #endif
+

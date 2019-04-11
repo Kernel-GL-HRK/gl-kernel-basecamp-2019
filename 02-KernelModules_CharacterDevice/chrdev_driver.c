@@ -13,7 +13,7 @@
 #define MODULE_NAME "chrdev_driver"
 #endif
 
-#define MODULE_MIN_BUFF_SIZE 1000
+#define MODULE_MIN_BUFF_SIZE 1024
 
 int chrdev_major = 0;		/* MAJOR */
 int chrdev_minor = 0;		/* MINOR */
@@ -31,6 +31,7 @@ static char *chrdev_buffer;
  */
 int chrdev_open(struct inode *inode, struct file *filp)
 {
+	printk(KERN_INFO " chrdev: success open \n");
 	return 0;
 }
 
@@ -39,6 +40,7 @@ int chrdev_open(struct inode *inode, struct file *filp)
  */
 int chrdev_release(struct inode *inode, struct file *filp)
 {
+	printk(KERN_INFO " chrdev: success close \n");
 	return 0;
 }
 
@@ -47,7 +49,26 @@ int chrdev_release(struct inode *inode, struct file *filp)
  */
 ssize_t chrdev_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
 {
-	return 0;
+	// return cmd
+	ssize_t retval = 0;
+	
+	// number of bytes left to read
+	int remain = chrdev_buffer_size - (int) (*f_pos); 
+	
+	if (remain == 0) 
+		return 0;	
+	if (count > remain)
+		count = remain;
+
+	if (raw_copy_from_user(buf, chrdev_buffer + *f_pos, count)) {
+		retval = -EFAULT;
+		goto out;
+	}
+	*f_pos += count;
+	retval = count;
+
+  out:
+return retval;
 }
 
 /*
@@ -55,7 +76,26 @@ ssize_t chrdev_read(struct file *filp, char __user *buf, size_t count, loff_t *f
  */
 ssize_t chrdev_write(struct file *filp, const char __user *buf, size_t count, loff_t *f_pos)
 {
-	return 0;
+	// return cmd
+	ssize_t retval = 0;
+	
+	// number of bytes left to write
+	int remain = chrdev_buffer_size - (int) (*f_pos); 
+
+	if (count > remain) {
+		return -EIO;
+	}
+
+	if (raw_copy_from_user(chrdev_buffer + *f_pos, buf, count)) {
+		retval = -EFAULT;
+		goto out;
+	}
+	
+	*f_pos += count;
+	retval = count;
+
+  out:
+return retval;
 }
 
 /*
@@ -84,7 +124,7 @@ void __exit chrdev_exit(void)
  	
 	unregister_chrdev_region(devno, chrdev_nr_devs);
 
-	printk(KERN_INFO "=== chrdev: exit ===\n");
+	printk(KERN_INFO "chrdev: exit \n");
 }
 
 /*
@@ -112,9 +152,9 @@ int __init chrdev_init(void)
 	cdev_init(cdev, &chrdev_fops);
 	cdev->owner   = THIS_MODULE;
 	if (cdev_add(cdev, dev, chrdev_nr_devs)) { 
-		printk(KERN_WARNING "=== chrdev: cdev_add error ===\n");
+		printk(KERN_WARNING "chrdev: cdev_add error \n");
 	}
-	printk(KERN_INFO "=== chrdev: %d:%d ===\n", chrdev_major, chrdev_minor);
+	printk(KERN_INFO "chrdev: %d:%d \n", chrdev_major, chrdev_minor);
 
 
 	if(chrdev_buffer_size < MODULE_MIN_BUFF_SIZE){
@@ -130,7 +170,7 @@ int __init chrdev_init(void)
 	
 	fail:
 		chrdev_exit();
-		printk(KERN_WARNING "=== chrdev: register error ===\n");
+		printk(KERN_WARNING "chrdev: register error \n");
 		return result;
 }
 
@@ -145,3 +185,4 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR ("Alexandr.Datsenko<datsenkoalexander@gmail.com>");
 MODULE_DESCRIPTION("Character driver");
 MODULE_VERSION("0.1");
+
