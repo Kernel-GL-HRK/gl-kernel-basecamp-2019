@@ -4,8 +4,10 @@
 #include <linux/err.h>
 #include <linux/uaccess.h>
 #include <linux/proc_fs.h>
+
 /* kfree(), kzalloc() */
 #include <linux/slab.h>
+
 /* command-line args */
 #include <linux/moduleparam.h>
 
@@ -13,12 +15,14 @@
 #define DEVICE_NAME "xchar"
 
 #define PROC_DIRECTORY DEVICE_NAME
-#define PROC_FILENAME "buffer_size"
+#define PROC_BUFFER_SIZE_FILENAME "buffer_size"
+#define PROC_USED_BUFFER_VOLUME_FILENAME "used_buffer_volume"
 #define PROC_BUFFER_SIZE 10
 
 #define PROC_PARAM_NUM 2
 #define PROC_BUFFER_SIZE_ID 0
 #define PROC_USED_BUFFER_VOLUME_ID 1
+
 /**
  *  Module parameter, eg: insmod ./xchar.ko buffer=1024
  */
@@ -42,41 +46,65 @@ static size_t proc_msg_length[PROC_PARAM_NUM];
 static size_t proc_msg_read_pos[PROC_PARAM_NUM];
 
 static struct proc_dir_entry *proc_dir;
-static struct proc_dir_entry *proc_file;
+static struct proc_dir_entry *proc_file[PROC_PARAM_NUM];
 
-static ssize_t example_read(struct file *file_p, char __user *buffer,
-			    size_t length, loff_t *offset);
-static ssize_t example_write(struct file *file_p, const char __user *buffer,
-			     size_t length, loff_t *offset);
+static ssize_t proc_buffer_size_read(struct file *file_p, char __user *buffer,
+				     size_t length, loff_t *offset);
+static ssize_t proc_buffer_size_write(struct file *file_p,
+				      const char __user *buffer, size_t length,
+				      loff_t *offset);
+static ssize_t proc_used_buffer_volume_read(struct file *file_p,
+					    char __user *buffer, size_t length,
+					    loff_t *offset);
+static ssize_t proc_used_buffer_volume_write(struct file *file_p,
+					     const char __user *buffer,
+					     size_t length, loff_t *offset);
 
-static struct file_operations proc_fops = {
-	.read = example_read,
-	.write = example_write,
+static struct file_operations proc_buffer_size_fops = {
+	.read = proc_buffer_size_read,
+	.write = proc_buffer_size_write,
+};
+
+static struct file_operations proc_used_buffer_volume_fops = {
+	.read = proc_used_buffer_volume_read,
+	.write = proc_used_buffer_volume_write,
 };
 
 /*
  * procfs operations
  */
-static int create_proc_example(void)
+static int init_proc(void)
 {
 	proc_dir = proc_mkdir(PROC_DIRECTORY, NULL);
 	if (NULL == proc_dir)
 		return -EFAULT;
 
-	proc_file =
-		proc_create(PROC_FILENAME, S_IFREG | S_IRUGO /* | S_IWUGO */,
-			    proc_dir, &proc_fops);
-	if (NULL == proc_file)
+	proc_file[PROC_BUFFER_SIZE_ID] =
+		proc_create(PROC_BUFFER_SIZE_FILENAME,
+			    S_IFREG | S_IRUGO /* | S_IWUGO */, proc_dir,
+			    &proc_buffer_size_fops);
+	if (NULL == proc_file[PROC_BUFFER_SIZE_ID])
+		return -EFAULT;
+
+	proc_file[PROC_USED_BUFFER_VOLUME_ID] =
+		proc_create(PROC_USED_BUFFER_VOLUME_FILENAME,
+			    S_IFREG | S_IRUGO /* | S_IWUGO */, proc_dir,
+			    &proc_used_buffer_volume_fops);
+	if (NULL == proc_file[PROC_USED_BUFFER_VOLUME_ID])
 		return -EFAULT;
 
 	return 0;
 }
 
-static void cleanup_proc_example(void)
+static void cleanup_proc(void)
 {
-	if (proc_file) {
-		remove_proc_entry(PROC_FILENAME, proc_dir);
-		proc_file = NULL;
+	if (proc_file[PROC_BUFFER_SIZE_ID]) {
+		remove_proc_entry(PROC_BUFFER_SIZE_FILENAME, proc_dir);
+		proc_file[PROC_BUFFER_SIZE_ID] = NULL;
+	}
+	if (proc_file[PROC_USED_BUFFER_VOLUME_ID]) {
+		remove_proc_entry(PROC_USED_BUFFER_VOLUME_FILENAME, proc_dir);
+		proc_file[PROC_USED_BUFFER_VOLUME_ID] = NULL;
 	}
 	if (proc_dir) {
 		remove_proc_entry(PROC_DIRECTORY, NULL);
@@ -84,8 +112,8 @@ static void cleanup_proc_example(void)
 	}
 }
 
-static ssize_t example_read(struct file *file_p, char __user *buffer,
-			    size_t length, loff_t *offset)
+static ssize_t proc_buffer_size_read(struct file *file_p, char __user *buffer,
+				     size_t length, loff_t *offset)
 {
 	static int complete = 1;
 	size_t left;
@@ -121,10 +149,58 @@ static ssize_t example_read(struct file *file_p, char __user *buffer,
 	return length - left;
 }
 
-static ssize_t example_write(struct file *file_p, const char __user *buffer,
-			     size_t length, loff_t *offset)
+static ssize_t proc_used_buffer_volume_read(struct file *file_p,
+					    char __user *buffer, size_t length,
+					    loff_t *offset)
 {
-	pr_info(DEVICE_NAME ": write to procfs is forbidden.\n");
+	static int complete = 1;
+	size_t left;
+
+	if (complete) {
+		complete = 0;
+		proc_msg_read_pos[PROC_USED_BUFFER_VOLUME_ID] = 0;
+	}
+
+	if (length > (proc_msg_length[PROC_USED_BUFFER_VOLUME_ID] -
+		      proc_msg_read_pos[PROC_USED_BUFFER_VOLUME_ID]))
+		length = (proc_msg_length[PROC_USED_BUFFER_VOLUME_ID] -
+			  proc_msg_read_pos[PROC_USED_BUFFER_VOLUME_ID]);
+
+	left = copy_to_user(
+		buffer,
+		&proc_buffer[PROC_USED_BUFFER_VOLUME_ID]
+			    [proc_msg_read_pos[PROC_USED_BUFFER_VOLUME_ID]],
+		length);
+
+	proc_msg_read_pos[PROC_USED_BUFFER_VOLUME_ID] += length - left;
+
+	if ((length - left) == 0)
+		complete = 1;
+
+	if (left)
+		pr_err(DEVICE_NAME
+		       ": (procfs) failed to read %zu from %zu chars\n",
+		       left, length);
+	else
+		pr_info(DEVICE_NAME ": (procfs) read %zu chars\n", length);
+
+	return length - left;
+}
+
+static ssize_t proc_buffer_size_write(struct file *file_p,
+				      const char __user *buffer, size_t length,
+				      loff_t *offset)
+{
+	pr_info(DEVICE_NAME ": write to /procf/buffer_size is forbidden.\n");
+	return length;
+}
+
+static ssize_t proc_used_buffer_volume_write(struct file *file_p,
+					     const char __user *buffer,
+					     size_t length, loff_t *offset)
+{
+	pr_info(DEVICE_NAME
+		": write to /proc/used_buffer_volume is forbidden.\n");
 	return length;
 }
 
@@ -168,6 +244,10 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len,
 	}
 	data_size = 0; /* eof for cat */
 
+	sprintf(proc_buffer[PROC_USED_BUFFER_VOLUME_ID], "%zu", data_size);
+	proc_msg_length[PROC_USED_BUFFER_VOLUME_ID] =
+		strlen(proc_buffer[PROC_USED_BUFFER_VOLUME_ID]);
+
 	pr_info(DEVICE_NAME ": %zd bytes read\n", len);
 	return len;
 }
@@ -184,13 +264,17 @@ static ssize_t dev_write(struct file *filep, const char *buffer, size_t len,
 	if (data_size > buffer_size)
 		data_size = buffer_size;
 
+	sprintf(proc_buffer[PROC_USED_BUFFER_VOLUME_ID], "%zu", data_size);
+	proc_msg_length[PROC_USED_BUFFER_VOLUME_ID] =
+		strlen(proc_buffer[PROC_USED_BUFFER_VOLUME_ID]);
+
 	ret = copy_from_user(data_buffer, buffer, data_size);
 	if (ret) {
 		pr_err(DEVICE_NAME ": copy_from_user failed: %d\n", ret);
 		return -EFAULT;
 	}
 
-	pr_info(DEVICE_NAME ": %zd bytes written\n", data_size);
+	pr_info(DEVICE_NAME ": %zu bytes written\n", data_size);
 	return data_size;
 }
 
@@ -244,6 +328,10 @@ static int xchar_init(void)
 	proc_msg_length[PROC_BUFFER_SIZE_ID] =
 		strlen(proc_buffer[PROC_BUFFER_SIZE_ID]);
 
+	sprintf(proc_buffer[PROC_USED_BUFFER_VOLUME_ID], "%zu", data_size);
+	proc_msg_length[PROC_USED_BUFFER_VOLUME_ID] =
+		strlen(proc_buffer[PROC_USED_BUFFER_VOLUME_ID]);
+
 	pdev = device_create(pclass, NULL, MKDEV(major, 0), NULL,
 			     DEVICE_NAME "0");
 	if (IS_ERR(pdev)) {
@@ -254,9 +342,9 @@ static int xchar_init(void)
 	}
 	pr_info(DEVICE_NAME ": device node created successfully\n");
 
-	err = create_proc_example();
+	err = init_proc();
 	if (err) {
-		cleanup_proc_example();
+		cleanup_proc();
 		pr_err(DEVICE_NAME
 		       ": (procfs) can't create file or directory\n");
 		return err;
@@ -276,7 +364,7 @@ static void xchar_exit(void)
 		kfree(data_buffer);
 		data_buffer = NULL;
 	}
-	cleanup_proc_example();
+	cleanup_proc();
 	pr_info(DEVICE_NAME ": module exited\n");
 }
 
