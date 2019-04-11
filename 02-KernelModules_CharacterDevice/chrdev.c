@@ -5,6 +5,8 @@
 #include <linux/module.h>	// Module init, exit functions
 #include <linux/uaccess.h>	// copy_to_user, copy_from_user functions
 #include <linux/slab.h>		// kzalloc, kfree functions
+#include <linux/proc_fs.h>	// For proc intertface
+
 
 MODULE_AUTHOR("Dima.Moruha <trluxsus@gmail.com>");
 MODULE_DESCRIPTION("Character device driver");
@@ -22,6 +24,36 @@ static int BUFFER_SIZE = MIN_BUFFER_SIZE;
 static unsigned char* data_buffer = NULL;
 
 module_param(BUFFER_SIZE, int, 0660);
+
+// proc implementaition--------------------------------------------------------------------
+
+#define FILE_NAME "chrdev-info"
+
+static struct proc_dir_entry* proc_chrdev_info;
+
+static ssize_t proc_chrdev_cdev_read(struct file *file, char __user *buf, size_t count, loff_t *ppos) 
+{
+        char msg[256];
+        int retval =0;
+
+        if(*ppos >= strlen(msg))
+				return 0;
+
+        retval += sprintf(msg,"Buffer info:\n\tallocated size - %d bytes\n\tused size - %d bytes\n", BUFFER_SIZE, data_size );
+
+        if(copy_to_user(buf, msg, retval))
+                return -EFAULT;
+
+        *ppos = retval;
+        return retval;
+}
+
+static struct file_operations proc_chrdev_ops = {
+        .owner = THIS_MODULE,
+        .read = proc_chrdev_cdev_read
+};
+
+// eof proc implementaition--------------------------------------------------------------------
 
 static int chrdev_open(struct inode *inodep, struct file *filep)
 {
@@ -160,6 +192,8 @@ static int __init chrdev_init(void)
 				return -ENOMEM;
 		}
 
+		proc_chrdev_info = proc_create(FILE_NAME, 0, NULL, &proc_chrdev_ops);
+
 		return 0;
 
 fail_create_device:
@@ -177,6 +211,7 @@ fail_alloc_buffer:
 static void __exit chrdev_exit(void)
 {
 		printk(KERN_INFO "chrdev: exit\n");
+		remove_proc_entry(FILE_NAME, NULL);
 		device_destroy(chrdev_class, dev);
 		class_destroy(chrdev_class);
 		cdev_del(chrdev_cdev);
