@@ -16,7 +16,7 @@
 #define NAME_SYSCLASS "chardev"
 #define SIZE_STRING 20
 #define BUFFER_SIZE 1024
-#define SYSFS_NAME cleanup
+#define SYSFS_NAME Cleanup
 
 static struct proc_dir_entry *proc_file;
 static dev_t first;
@@ -56,11 +56,15 @@ static void cleanup_buffer(void)
 static ssize_t sysfs_show(struct class *class, struct class_attribute *attr, char *buf)
 {
     printk(KERN_INFO "Sysfs_show\n");
+    memset(dev_buffer, 0, all_memory);
+    full_memory = 0;
     return 0;
 }
 static ssize_t sysfs_store(struct class *class, struct class_attribute *attr, const char *buf, size_t count)
 {
     printk(KERN_INFO "Sysfs_store\n");
+    memset(dev_buffer, 0, all_memory);
+    full_memory = 0;
     return count;
 }
 static ssize_t proc_read(struct file *f, char __user *buffer, size_t len, loff_t *off)
