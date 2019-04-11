@@ -52,7 +52,22 @@ static void cleanup_buffer(void)
         dev_buffer = NULL;
     }
 }
-
+static int check_ascii(const char*buf)
+{
+    int len = strlen(buf) - 1;
+    unsigned int time;
+    int i;
+    printk(KERN_INFO "check_ascii: %s and size: %d\n", buf, len);
+    for (i = 0; i < len; i++)
+    {
+        time = buf[i];
+        printk(KERN_INFO "%d", time);
+        if (time < 33 || time > 126) {
+            return -EFAULT;
+        }
+    }
+    return 0;
+}
 static ssize_t sysfs_show(struct class *class, struct class_attribute *attr, char *buf)
 {
     printk(KERN_INFO "Sysfs_show\n");
@@ -105,6 +120,10 @@ static ssize_t dev_write(
     printk(KERN_INFO "chrdev: write to file %s\n", f->f_path.dentry->d_iname);
     full_memory = len;
     if (full_memory > all_memory) full_memory = all_memory;
+    if (check_ascii(buf) < 0) {
+        printk(KERN_ERR "chrdev: used not allowed characters\n");
+        return -EFAULT;
+    }
     ret = copy_from_user(dev_buffer, buf, full_memory);
     if (ret) {
         printk(KERN_ERR "chrdev: copy_from_user failed: %d\n", ret);
