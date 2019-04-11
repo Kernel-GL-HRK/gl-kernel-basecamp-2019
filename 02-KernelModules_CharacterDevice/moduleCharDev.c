@@ -12,8 +12,8 @@
 #include <linux/slab.h>
 #include <linux/sysfs.h>
 
-#define PROC_FILENAME "MyCharDev"
-#define NAME_SYSCLASS "chardev"
+#define PROC_FILENAME "CharTechnologic"
+#define NAME_SYSCLASS "chartechnologic"
 #define SIZE_STRING 20
 #define BUFFER_SIZE 1024
 #define SYSFS_NAME Cleanup
@@ -57,7 +57,7 @@ static int check_ascii(const char*buf)
     int len = strlen(buf) - 1;
     unsigned int time;
     int i;
-    printk(KERN_INFO "check_ascii: %s and size: %d\n", buf, len);
+    printk(KERN_INFO "Check_ascii: %s and size: %d\n", buf, len);
     for (i = 0; i < len; i++)
     {
         time = buf[i];
@@ -102,34 +102,33 @@ static int dev_close(struct inode *i, struct file *f)
 static ssize_t dev_read(struct file *f, char __user *buf, size_t len, loff_t *off)
 {
     int ret;
-    printk(KERN_INFO "chrdev: read from file %s\n", f->f_path.dentry->d_iname);
+    printk(KERN_INFO "CharTechnologic: read from file %s\n", f->f_path.dentry->d_iname);
     if (len > full_memory) len = full_memory;
     ret = copy_to_user(buf, dev_buffer, len);
     if (ret) {
-        printk(KERN_ERR "chrdev: copy_to_user failed: %d\n", ret);
+        printk(KERN_ERR "CharTechnologic: copy_to_user failed: %d\n", ret);
         return -EFAULT;
     }
     full_memory = 0;
-    printk(KERN_INFO "chrdev: %d bytes read\n", len);
+    printk(KERN_INFO "CharTechnologic: %d bytes read\n", len);
     return len;
 }
-static ssize_t dev_write(
-                         struct file *f, const char __user *buf, size_t len, loff_t *off)
+static ssize_t dev_write(struct file *f, const char __user *buf, size_t len, loff_t *off)
 {
     int ret;
-    printk(KERN_INFO "chrdev: write to file %s\n", f->f_path.dentry->d_iname);
+    printk(KERN_INFO "CharTechnologic: write to file %s\n", f->f_path.dentry->d_iname);
     full_memory = len;
     if (full_memory > all_memory) full_memory = all_memory;
     if (check_ascii(buf) < 0) {
-        printk(KERN_ERR "chrdev: used not allowed characters\n");
+        printk(KERN_ERR "CharTechnologic: used not allowed characters\n");
         return -EFAULT;
     }
     ret = copy_from_user(dev_buffer, buf, full_memory);
     if (ret) {
-        printk(KERN_ERR "chrdev: copy_from_user failed: %d\n", ret);
+        printk(KERN_ERR "CharTechnologic: copy_from_user failed: %d\n", ret);
         return -EFAULT;
     }
-    printk(KERN_INFO "chrdev: %d bytes written\n", full_memory);
+    printk(KERN_INFO "CharTechnologic: %d bytes written\n", full_memory);
     return len;
 }
 static struct file_operations proc_fops =
@@ -158,21 +157,21 @@ static int __init dev_init(void) /* Constructor */
     if(proc_file == NULL) {
         goto fail;
     }
-    printk(KERN_INFO "File /proc/MyCharDev was created\n");
+    printk(KERN_INFO "File /proc/%s was created\n", PROC_FILENAME);
     
     if (IS_ERR(class_device = class_create(THIS_MODULE, NAME_SYSCLASS))) {
         goto fail;
     }
-    printk(KERN_INFO "Class /sys/class/chardev was created\n");
+    printk(KERN_INFO "Class /sys/class/%s was created\n", NAME_SYSCLASS);
     res = class_create_file(class_device, &sysfs);
-    printk(KERN_INFO "File /sys/class/cleanup was created\n");
+    printk(KERN_INFO "File /sys/class/%s/Cleanup was created\n", NAME_SYSCLASS);
     if (res < 0) {
         goto fail;
     }
     if (IS_ERR(dev_ret = device_create(class_device, NULL, first, NULL, NAME_SYSCLASS))) {
         goto fail;
     }
-    printk(KERN_INFO "File /dev/chardev was created\n");
+    printk(KERN_INFO "File /dev/%s was created\n", NAME_SYSCLASS);
     cdev_init(&c_dev, &dev_fops);
     if (cdev_add(&c_dev, first, countFile) < 0){
         goto fail;
