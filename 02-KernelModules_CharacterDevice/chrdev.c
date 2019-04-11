@@ -3,6 +3,7 @@
 #include <linux/fs.h>		// Fops
 #include <linux/init.h>		// Indicates initialization and cleanup functions	
 #include <linux/module.h>	// Module init, exit functions
+#include <linux/uaccess.h>	// copy_to_user, copy_from_user functions
 
 MODULE_AUTHOR("Dima.Moruha <trluxsus@gmail.com>");
 MODULE_DESCRIPTION("Character device driver");
@@ -12,33 +13,81 @@ MODULE_VERSION("0.1");
 #define NUMBER_OF_DEVICES 1
 #define DEVICE_NAME "chrdev-cdev"
 #define CLASS_NAME	"chrdev"
+#define BUFFER_SIZE	1024
+
+static int is_open;
+static int data_size;
+static unsigned char data_buffer[BUFFER_SIZE];
 
 static int chrdev_open(struct inode *inodep, struct file *filep)
 {
+		if(is_open) {
+				printk("chrdev: opened\n");
+				goto fail_open;
+		}
+
+		is_open = 1;
+
 		printk("chrdev: open\n");
 		return 0;
+
+fail_open:
+		return -EBUSY;
 }
 
 static int chrdev_release(struct inode *inodep, struct file *filep)
 {
+		is_open = 0;
 		printk("chrdev: release\n");
 		return 0;
 }
 
 static ssize_t chrdev_read(struct file *file, char __user *data, size_t size, loff_t *offset) 
 {
-		printk(KERN_INFO "chrdev: read\n");
+		int retval;
+		
+		printk(KERN_INFO "chrdev: read \n");
+
+		if (count > data_size) count = data_size;
+
+		retval = copy_to_user(buf, data_buffer, count);
+		if (retval) {
+				printk(KERN_INFO "chrdev: copy_to_user failed: %d\n", retval);
+				goto fail_read;
+		}
+		data_size = 0;
+
+		printk(KERN_INFO "chrdev: %d bytes read\n", count);
 		return count;
+
+fail_read:
+		return -EFAULT;
 }
 
 static ssize_t chrdev_write(struct file *file, const char __user *data, size_t size, loff_t *offset) 
 {
-		printk(KERN_INFO "chrdev: write\n");
-		return size;
+		int retval;
+
+		printk(KERN_INFO "chrdev write to file \n");
+
+		data_size = count;
+		if (data_size > BUFFER_SIZE) data_size = BUFFER_SIZE;
+
+		retval = copy_from_user(data_buffer, buf, data_size);
+		if (retval) {
+				printk(KERN_INFO"chrdev copy_from_user failed: %d\n", retval);
+				goto fail_write;
+		}
+
+		printk(KERN_INFO "chrdev: %d bytes written\n", data_size);
+		return data_size;
+
+fail_write:
+		return -EFAULT;
 }
 
 static struct file_operations chrdev_fops = {
-		.owner = THIS_MODULE,
+		owner = THIS_MODULE,
 		.read = chrdev_read,
 		.write = chrdev_write,
 		.open = chrdev_open,
@@ -53,22 +102,22 @@ static struct class* chrdev_class;
 static int __init chrdev_init(void) 
 {
 		int result;
-		
-		is_open = 0;
-		data_size = 0;
 
-		printk(KERN_DEBUG "chrdev: init\n");
+		data_size = 0;
+		is_open = 0;
+
+		printk(KERN_INFO "chrdev: init\n");
 
 		result = alloc_chrdev_region(&dev, 0, NUMBER_OF_DEVICES, DEVICE_NAME);
 		if(result < 0) {
-				printk(KERN_ERR "chrdev: failed to alloc chrdev region\n");
+				printk(KERN_INFO "chrdev: failed to alloc chrdev region\n");
 				goto fail_alloc_chrdev_region;
 		}
 
 		chrdev_cdev = cdev_alloc();
 		if(!chrdev_cdev) {
 				result = -ENOMEM;
-				printk(KERN_ERR "chrdev: failed to alloc cdev\n");
+				printk(KERN_INFO "chrdev: failed to alloc cdev\n");
 				goto fail_alloc_cdev;
 		}
 
@@ -76,20 +125,20 @@ static int __init chrdev_init(void)
 		
 		result = cdev_add(chrdev_cdev, dev, 1);
 		if(result < 0) {
-				printk(KERN_ERR "chrdev: failed to add cdev\n");
+				printk(KERN_INFO "chrdev: failed to add cdev\n");
 				goto fail_add_cdev;
 		}
 
 		chrdev_class = class_create(THIS_MODULE, CLASS_NAME);
 		if(!chrdev_class) {
 				result = -EEXIST;
-				printk(KERN_ERR "chrdev: failed to create class\n");
+				printk(KERN_INFO "chrdev: failed to create class\n");
 				goto fail_create_class;
 		}
 	
 		if(!device_create(chrdev_class, NULL, dev, NULL, "chrdev_cdev%d", MINOR(dev))) {
 				result = -EINVAL;
-				printk(KERN_ERR "chrdev: failed to create device\n");
+				printk(KERN_INFO "chrdev: failed to create device\n");
 				goto fail_create_device;
 		}
 
