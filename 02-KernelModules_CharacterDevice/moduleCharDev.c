@@ -10,11 +10,13 @@
 #include <linux/cdev.h>
 #include <linux/uaccess.h>
 #include <linux/slab.h>
+#include <linux/sysfs.h>
 
 #define PROC_FILENAME "MyCharDev"
 #define NAME_SYSCLASS "chardev"
 #define SIZE_STRING 20
 #define BUFFER_SIZE 1024
+#define SYSFS_NAME cleanup
 
 static struct proc_dir_entry *proc_file;
 static dev_t first;
@@ -26,8 +28,10 @@ static struct class *class_device;
 struct device *dev_ret;
 static struct cdev c_dev;
 static size_t full_memory = 0;
-
-
+static ssize_t sysfs_show(struct class*, struct class_attribute*, char*);
+static ssize_t sysfs_store(struct class*, struct class_attribute*, const char*, size_t );
+static ssize_t proc_read(struct file*, char __user*, size_t len, loff_t*);
+struct class_attribute sysfs = __ATTR(SYSFS_NAME, 0664, &sysfs_show, &sysfs_store);
 
 static int create_buffer(void)
 {
@@ -49,7 +53,16 @@ static void cleanup_buffer(void)
     }
 }
 
-
+static ssize_t sysfs_show(struct class *class, struct class_attribute *attr, char *buf)
+{
+    printk(KERN_INFO "Sysfs_show\n");
+    return 0;
+}
+static ssize_t sysfs_store(struct class *class, struct class_attribute *attr, const char *buf, size_t count)
+{
+    printk(KERN_INFO "Sysfs_store\n");
+    return count;
+}
 static ssize_t proc_read(struct file *f, char __user *buffer, size_t len, loff_t *off)
 {
     sprintf(size_memory, "%u %u\n", all_memory, all_memory - full_memory);
@@ -112,6 +125,7 @@ static struct file_operations dev_fops =
 
 static int __init dev_init(void) /* Constructor */
 {
+    int res;
     printk(KERN_INFO "Start device");
     if ((alloc_chrdev_region(&first, 0, countFile, PROC_FILENAME)) < 0) {
         goto fail;
@@ -127,6 +141,11 @@ static int __init dev_init(void) /* Constructor */
         goto fail;
     }
     printk(KERN_INFO "Class /sys/class/chardev was created\n");
+    res = class_create_file(class_device, &sysfs);
+    printk(KERN_INFO "File /sys/class/cleanup was created\n");
+    if (res < 0) {
+        goto fail;
+    }
     if (IS_ERR(dev_ret = device_create(class_device, NULL, first, NULL, NAME_SYSCLASS))) {
         goto fail;
     }
@@ -140,8 +159,11 @@ static int __init dev_init(void) /* Constructor */
     }
     return 0;
 fail:
+    printk(KERN_ERR "Error");
+    cleanup_buffer();
     cdev_del(&c_dev);
     device_destroy(class_device, first);
+    class_remove_file(class_device, &sysfs);
     class_destroy(class_device);
     remove_proc_entry(PROC_FILENAME, NULL);
     unregister_chrdev_region(first, countFile);
@@ -155,10 +177,10 @@ static void __exit dev_exit(void) /* Destructor */
     cleanup_buffer();
     cdev_del(&c_dev);
     device_destroy(class_device, first);
+    class_remove_file(class_device, &sysfs);
     class_destroy(class_device);
     remove_proc_entry(PROC_FILENAME, NULL);
     unregister_chrdev_region(first, countFile);
-    
 }
 
 module_init(dev_init);
