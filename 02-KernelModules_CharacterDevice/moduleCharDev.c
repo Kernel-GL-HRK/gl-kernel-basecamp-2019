@@ -32,7 +32,7 @@ static ssize_t sysfs_show(struct class*, struct class_attribute*, char*);
 static ssize_t sysfs_store(struct class*, struct class_attribute*, const char*, size_t );
 static ssize_t proc_read(struct file*, char __user*, size_t len, loff_t*);
 struct class_attribute sysfs = __ATTR(SYSFS_NAME, 0664, &sysfs_show, &sysfs_store);
-
+module_param(all_memory, int, 0664);
 static int create_buffer(void)
 {
     all_memory += BUFFER_SIZE;
@@ -211,3 +211,4 @@ module_exit(dev_exit);
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Danil Petrov <daaaanil81@gmail.com>");
 MODULE_DESCRIPTION("My First Character Driver");
+MODULE_VERSION("0.1");
