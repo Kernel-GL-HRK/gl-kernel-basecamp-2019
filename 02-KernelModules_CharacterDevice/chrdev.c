@@ -4,6 +4,7 @@
 #include <linux/init.h>		// Indicates initialization and cleanup functions	
 #include <linux/module.h>	// Module init, exit functions
 #include <linux/uaccess.h>	// copy_to_user, copy_from_user functions
+#include <linux/slab.h>		// kzalloc, kfree functions
 
 MODULE_AUTHOR("Dima.Moruha <trluxsus@gmail.com>");
 MODULE_DESCRIPTION("Character device driver");
@@ -13,11 +14,14 @@ MODULE_VERSION("0.1");
 #define NUMBER_OF_DEVICES 1
 #define DEVICE_NAME "chrdev-cdev"
 #define CLASS_NAME	"chrdev"
-#define BUFFER_SIZE	1024
+#define MIN_BUFFER_SIZE	1024
 
 static int is_open;
 static int data_size;
-static unsigned char data_buffer[BUFFER_SIZE];
+static int BUFFER_SIZE = MIN_BUFFER_SIZE;
+static unsigned char* data_buffer = NULL;
+
+module_param(BUFFER_SIZE, int, 0660);
 
 static int chrdev_open(struct inode *inodep, struct file *filep)
 {
@@ -68,6 +72,7 @@ static ssize_t chrdev_write(struct file *file, const char __user *data, size_t s
 {
 		int retval;
 
+
 		printk(KERN_INFO "chrdev write to file \n");
 
 		data_size = count;
@@ -87,7 +92,7 @@ fail_write:
 }
 
 static struct file_operations chrdev_fops = {
-		owner = THIS_MODULE,
+		.owner = THIS_MODULE,
 		.read = chrdev_read,
 		.write = chrdev_write,
 		.open = chrdev_open,
@@ -105,6 +110,13 @@ static int __init chrdev_init(void)
 
 		data_size = 0;
 		is_open = 0;
+
+		data_buffer = kzalloc(buffer_size * sizeof(*data_buffer), GFP_KERNEL);
+		if (!data_buffer) {
+				result = -ENOMEM;
+				printk(KERN_INFO"chrdev: failed to alloc buffer\n");
+				goto fail_alloc_buffer;
+		}
 
 		printk(KERN_INFO "chrdev: init\n");
 
@@ -142,6 +154,12 @@ static int __init chrdev_init(void)
 				goto fail_create_device;
 		}
 
+		data_buffer = kmalloc(BUFFER_SIZE, GFP_KERNEL);
+		if(!data_buffer) {
+				printk(KERN_INFO "failed to alloc cdev\n");
+				return -ENOMEM;
+		}
+
 		return 0;
 
 fail_create_device:
@@ -152,16 +170,18 @@ fail_add_cdev:
 fail_alloc_cdev:
 		unregister_chrdev_region(dev, 1);
 fail_alloc_chrdev_region:
+fail_alloc_buffer:
 		return result;
 }
 
 static void __exit chrdev_exit(void)
 {
-		printk(KERN_DEBUG "chrdev: exit\n");
+		printk(KERN_INFO "chrdev: exit\n");
 		device_destroy(chrdev_class, dev);
 		class_destroy(chrdev_class);
 		cdev_del(chrdev_cdev);
 		unregister_chrdev_region(dev, NUMBER_OF_DEVICES);
+		kfree(data_buffer);
 }
 
 module_init(chrdev_init);
