@@ -1,6 +1,6 @@
 KDIR := /home/eduard/Kernel_i386
 
-obj-m := Character_driver.o
+obj-m := character_driver.o
 
 .PHONY: all clean
 
