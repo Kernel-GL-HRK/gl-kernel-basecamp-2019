@@ -19,3 +19,24 @@ echo "input name of your module as module_name.kp"
 read $mod_nmae
 echo "input name of your test program" 
 read $test_name
+
+echo "Loading modul"
+insmod $home_path$mod_name 
+echo "checking module status"
+cat $proc_file_path
+echo "writing to device"
+echo  "0123456789" > $dev_file_path
+echo "checking module status"
+cat $proc_file_path
+echo "clearing a buffer"
+echo 1 >$sys_file_path
+echo "checking module status"
+cat $proc_file_path
+echo "writing to device\n"
+echo  "0123456789" > $dev_file_path
+echo "checking module status"
+cat $proc_file_path
+echo "reading data from device"
+$test_file_path$test_name
+echo "unlodading buffer"
+rmmod $mod_name
