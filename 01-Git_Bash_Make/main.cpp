@@ -20,5 +20,10 @@ int main(int argc, char** argv)
 	int random = rand() % 10;
 	cout << random << endl;
 
+	if (inputvalue == random)
+		cout << "You win!" << endl;
+	else
+		cout << "You lose!" << endl;
+
 	return 0;
 }
