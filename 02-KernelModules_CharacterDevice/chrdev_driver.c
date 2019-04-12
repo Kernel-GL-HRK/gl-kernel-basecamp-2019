@@ -185,11 +185,12 @@ void __exit chrdev_exit(void)
 		kfree(chrdev_buffer);
 		printk(KERN_INFO "chrdev: memory is free \n");
 	}
-	device_destroy(chrdev_class, dev);
 	remove_proc_entry(FILE_NAME_PROC, NULL);
 	kobject_put(chrdev_kobject);
-	proc_remove(proc_chrdev_info);
-	sysfs_remove_file(chrdev_kobject, &sysfs_attribute.attr	);
+	device_destroy(chrdev_class, devno);
+	class_unregister(chrdev_class);
+	class_destroy(chrdev_class);
+	unregister_chrdev(chrdev_major, MODULE_NAME);
 	unregister_chrdev_region(devno, chrdev_nr_devs);
 
 	printk(KERN_INFO "chrdev: exit \n");
