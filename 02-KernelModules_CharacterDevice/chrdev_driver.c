@@ -7,6 +7,7 @@
 #include <linux/cdev.h>
 #include <asm/uaccess.h>        /* copy_*_user */
 #include <linux/proc_fs.h>
+#include <linux/sysfs.h>
 
 #include "chrdev_driver.h"
 
@@ -15,29 +16,49 @@
 #endif
 
 #define CLASS_NAME	"chrdev"
-#define FILE_NAME "chrdev_info"
+#define FILE_NAME_PROC "chrdev_info"
+#define FILE_NAME_SYS "chrdev_flag"
 
 #define MODULE_MIN_BUFF_SIZE 1024
 
-int chrdev_major = 0;		/* MAJOR */
-int chrdev_minor = 0;		/* MINOR */
-int chrdev_nr_devs = 1;		/* Number device for register */
+static int chrdev_major = 0;		/* MAJOR */
+static int chrdev_minor = 0;		/* MINOR */
+static int chrdev_nr_devs = 1;		/* Number device for register */
 
-unsigned int chrdev_buffer_size = 0;	
+static dev_t dev = 0;
+
+static unsigned int chrdev_buffer_size = 0;	
 module_param(chrdev_buffer_size, uint, S_IRUGO);
 
-struct cdev *cdev;
+static struct cdev *cdev;
 static char *chrdev_buffer;
 static struct class* chrdev_class;
+
 static struct proc_dir_entry* proc_chrdev_info;
 static ssize_t proc_chrdev_read(struct file *file, char __user *buf, size_t count, loff_t *ppos);
 
+static struct kobject *chrdev_kobject;
+static ssize_t chrdev_cdev_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count);
+static struct kobj_attribute sysfs_attribute =__ATTR(memory_free, 0660, NULL, chrdev_cdev_store);
 
 
 static struct file_operations chrdev_proc = {
         .owner = THIS_MODULE,
         .read = proc_chrdev_read
 };
+
+
+static ssize_t chrdev_cdev_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	int clean_flag = 0;
+    sscanf(buf, "%d", &clean_flag);
+    printk(KERN_DEBUG "chrdev: sysfs cleanup value %d", clean_flag);
+    if (clean_flag) {
+        memset(chrdev_buffer, '\0', chrdev_buffer_size);
+    }
+    return count;
+}
+
 
 static ssize_t proc_chrdev_read(struct file *file, char __user *buf, size_t count, loff_t *ppos) 
 {
@@ -66,7 +87,7 @@ static ssize_t proc_chrdev_read(struct file *file, char __user *buf, size_t coun
  */
 int chrdev_open(struct inode *inode, struct file *filp)
 {
-	printk(KERN_INFO " chrdev: success open \n");
+	printk(KERN_INFO "chrdev: success open \n");
 	return 0;
 }
 
@@ -75,7 +96,7 @@ int chrdev_open(struct inode *inode, struct file *filp)
  */
 int chrdev_release(struct inode *inode, struct file *filp)
 {
-	printk(KERN_INFO " chrdev: success close \n");
+	printk(KERN_INFO "chrdev: success close \n");
 	return 0;
 }
 
@@ -164,7 +185,11 @@ void __exit chrdev_exit(void)
 		kfree(chrdev_buffer);
 		printk(KERN_INFO "chrdev: memory is free \n");
 	}
-	remove_proc_entry(FILE_NAME, NULL);
+	device_destroy(chrdev_class, dev);
+	remove_proc_entry(FILE_NAME_PROC, NULL);
+	kobject_put(chrdev_kobject);
+	proc_remove(proc_chrdev_info);
+	sysfs_remove_file(chrdev_kobject, &sysfs_attribute.attr	);
 	unregister_chrdev_region(devno, chrdev_nr_devs);
 
 	printk(KERN_INFO "chrdev: exit \n");
@@ -176,7 +201,6 @@ void __exit chrdev_exit(void)
 int __init chrdev_init(void)
 {
 	int result = 0;
-	dev_t dev = 0;
 
 	result = alloc_chrdev_region(&dev, chrdev_minor, chrdev_nr_devs, MODULE_NAME);
 	chrdev_major = MAJOR(dev);
@@ -204,7 +228,7 @@ int __init chrdev_init(void)
 		goto fail;
 	}
 
-	if (!device_create(chrdev_class, NULL, dev, NULL, "chrdev_cdev_%d", chrdev_major)) {
+	if (!device_create(chrdev_class, NULL, dev, NULL, "chrdev_cdev")) {
 		result = -EINVAL;
 		printk(KERN_ERR "chrdev: failed to create device\n");
 		goto fail;
@@ -230,14 +254,27 @@ int __init chrdev_init(void)
 		printk(KERN_ERR "chrdev: chrdev_buffer is out of memory");
 		goto fail;
 	}
-
-	proc_chrdev_info = proc_create(FILE_NAME, 0, NULL, &chrdev_proc);
+	
+	proc_chrdev_info = proc_create(FILE_NAME_PROC, 0, NULL, &chrdev_proc);
 	if (proc_chrdev_info == NULL) {
 		result = -ENOMEM;
 		printk(KERN_ERR "chrdev: proc_create error ");
 		goto fail;
 	}
 	
+	chrdev_kobject = kobject_create_and_add(FILE_NAME_SYS, kernel_kobj); 
+    if (!chrdev_kobject) {
+        result = -ENOMEM;
+        printk(KERN_ERR "chrdev: failed to kobject_create_and_add");
+		goto fail;
+    }
+
+    if (sysfs_create_file(chrdev_kobject, &sysfs_attribute.attr)) {
+		result = -EINVAL;
+        printk(KERN_ERR "chrdev: failed to create sys_file");
+		goto fail;
+	}
+
 	return 0;
 	
 	fail:
