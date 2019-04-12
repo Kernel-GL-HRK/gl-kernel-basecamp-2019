@@ -1,0 +1,9 @@
+Testing instructions for a charachter device module
+
+1. To Compile the module using "$make" command (path to built kernel should be exported in BUILD_KERNEL variable)
+
+2. To Export .ko file path in MODULE_PATH variable " this and all further actions should be done from root user - use "$sudo su" beforehand "
+
+3. Run "test.sh" script file and check our's function module
+
+4. Compare the outputs of each step with what script outputs suggest they will be
