@@ -1,0 +1,18 @@
+
+Instructions for testing:
+
+1. Get this git repository
+
+2. Use "export BUILD_KERNEL=<Kernel_directory>"
+
+3. Use "make" command to build the module
+
+4. Use "sudo su" command to gain superuser rights
+
+5. Use "export MODULE_PATH=<Path_to_your_*.ko_file>" 
+
+6. Run testing script with "./chdev_test.script"
+
+7. ...?
+
+8. Profit!
