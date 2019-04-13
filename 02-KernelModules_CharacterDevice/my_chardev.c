@@ -152,6 +152,101 @@ static struct file_operations fops =
 
 /**************************************************************************************************/
 
+
+/************************************** Entry and exit point **************************************/
+
+static int __init dev_init(void)
+{
+	int retval;
+
+	dev_data_file.size_buff = buffer_size;
+	/* Create buffer */
+	if(dev_data_file.size_buff < DEFAULT_SIZE_BUFF)
+		dev_data_file.size_buff = DEFAULT_SIZE_BUFF;
+	
+	dev_data_file.crnt_size_buff = dev_data_file.size_buff;
+
+	dev_data_file.data_buff = kmalloc(dev_data_file.size_buff * sizeof(char), GFP_KERNEL);
+	if(!dev_data_file.data_buff)
+	{
+		pr_err("chardev: copy_from_user failed");
+		return -ENOMEM;
+	}
+	printk(KERN_INFO "Buffer create: %d",dev_data_file.size_buff);
+
+	/* Set dynamicly major number for device */
+	major = register_chrdev(0, DEVICE_NAME, &fops);
+	if (major < 0) {
+		pr_err("register_chrdev failed: %d\n", major);
+		return major;
+	}
+	pr_info("chrdev: register_chrdev ok, major = %d\n", major);
+	
+	/* Create device class */
+	pclass = class_create(THIS_MODULE, CLASS_NAME);
+	if (IS_ERR(pclass)) {
+		unregister_chrdev(major, DEVICE_NAME);
+		pr_err("chrdev class_create failed\n");
+		return PTR_ERR(pclass);
+	}
+	printk("chrdev class created successfully\n");
+	
+	retval = class_create_file(pclass, &sysfs);
+	if(retval < 0)
+	{
+		class_destroy(pclass);
+		unregister_chrdev(major, DEVICE_NAME);
+		pr_err("chrdev create failed\n");
+	}
+	/* Automaticly registrate device */
+	pdev = device_create(pclass, NULL, MKDEV(major, 0), NULL, DEVICE_NAME);
+	if (IS_ERR(pdev)) {
+		class_destroy(pclass);
+		unregister_chrdev(major, DEVICE_NAME);
+		pr_err("chrdev create failed\n");
+		return PTR_ERR(pdev);
+	}
+	printk("chrdev node created successfully\n");
+	device_create_file(pdev, &my_dev_attr);
+	/* Create proc file */
+	proc_file = proc_create(DEVICE_NAME, S_IFREG | S_IRUGO | S_IWUGO, NULL, &proc_fops);
+    if (NULL == proc_file){
+    	printk("chrdev proc_file not created\n");
+    	return -EFAULT;
+    }
+    printk("chrdev proc_file created successfully\n");
+
+	printk("chrdev module loaded\n");
+	return 0;
+}
+
+static void __exit dev_exit(void) 
+{
+	/* Clear up device buffer and free memory */
+	memset(dev_data_file.data_buff, 0, dev_data_file.size_buff);
+	kfree(dev_data_file.data_buff);
+	dev_data_file.data_buff = NULL;
+
+	/*Unset and unregistrate device and its class */
+	if (proc_file)
+    {
+        remove_proc_entry(DEVICE_NAME, NULL);
+        proc_file = NULL;
+    }
+	device_destroy(pclass, MKDEV(major, 0));
+	class_destroy(pclass);
+	unregister_chrdev(major, DEVICE_NAME);
+
+	printk("chrdev: module exited\n");
+}
+
+/**************************************************************************************************/
+
+module_param( buffer_size, int, S_IRUGO);
+
+module_init(dev_init);
+module_exit(dev_exit);
+
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Daniel.Shami <danismi715@gmail");
 MODULE_DESCRIPTION("Character device driver");                                                                                   
