@@ -1,0 +1,12 @@
+Test instruction
+
+1.Compile module by use "make" command
+ 1.1 To set you derictory set BUILD_KERNEL variable
+2.To check how module works use testscript.sh
+ 2.1 Set MPATH variable
+ 2.2 If you want to check it yourself go to step 3
+3.Use "insmod" command to install module
+ 3.1 Set BUFFER_SIZE varible to create buffer more than 1 k
+ 3.2 Try to writte something to new device whith "echo" command
+ 3.3 Check status with "cat" command
+4.Use "rmmod" to delete module
