@@ -71,6 +71,20 @@ static struct file_operations proc_fops = {
 /**************************************************************************************************/
 
 
+/**************************************  Interface for /sys ***************************************/
+
+static ssize_t sysfs_write( struct class *class, struct class_attribute *attr, const char *buf, size_t length )
+{
+	memset(dev_data_file.data_buff,0,dev_data_file.size_buff);
+	dev_data_file.crnt_size_buff = dev_data_file.size_buff;
+	printk(KERN_INFO "Buffer was cleanup\n");
+    return length;
+} 
+
+struct class_attribute sysfs = __ATTR(cleanup, 0664, NULL, sysfs_write);
+
+/**************************************************************************************************/
+
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Daniel.Shami <danismi715@gmail");
 MODULE_DESCRIPTION("Character device driver");                                                                                   
