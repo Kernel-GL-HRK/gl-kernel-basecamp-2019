@@ -49,6 +49,26 @@ static struct proc_dir_entry *proc_file;
 /**************************************************************************************************/
 
 
+/************************************** Interface for /proc ***************************************/
+
+static int proc_read(struct file *file_p, char __user *buffer, size_t length, loff_t *offset)
+{ 
+	int len = sprintf(proc_data_file.data_buff,"%d \n", dev_data_file.crnt_size_buff);
+    if( length < len ) return -EINVAL; 
+    if( *offset != 0 ) { 
+       return 0; 
+    } 
+    if( copy_to_user( buffer, proc_data_file.data_buff, len ) ) return -EINVAL; 
+    *offset = len; 
+    return len; 
+}
+
+static struct file_operations proc_fops = {
+    .read  = proc_read,
+    .write = NULL,
+};
+
+/**************************************************************************************************/
 
 
 MODULE_LICENSE("GPL");
