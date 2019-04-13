@@ -15,3 +15,15 @@ int input()
 
 	return inputvalue;
 }
+
+void play()
+{
+  int user = input();
+  int random = rand() % 10;
+  std::cout << random << std::endl;
+
+  if (user == random)
+    std::cout << "You win!" << std::endl;
+  else
+    std::cout << "You lose!" << std::endl;
+}
