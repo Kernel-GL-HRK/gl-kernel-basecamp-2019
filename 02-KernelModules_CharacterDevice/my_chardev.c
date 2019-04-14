@@ -73,11 +73,11 @@ static struct file_operations proc_fops = {
 
 /**************************************  Interface for /sys ***************************************/
 
-static ssize_t sysfs_write( struct class *class, struct class_attribute *attr, const char *buf, size_t length )
+static ssize_t sysfs_write( struct class *class, struct class_attribute *attr, const char *buffer, size_t length )
 {
 	memset(dev_data_file.data_buff,0,dev_data_file.size_buff);
 	dev_data_file.crnt_size_buff = dev_data_file.size_buff;
-	printk(KERN_INFO "Buffer was cleanup\n");
+	printk(KERN_INFO "chardev: buffer was cleanup\n");
     return length;
 } 
 
@@ -136,6 +136,10 @@ static ssize_t dev_write(struct file *f, const char __user *buffer, size_t lengt
 	if (retval) {
 		pr_err("chrdev: copy_from_user failed: %d\n", retval);
 		return -EFAULT;
+	}
+	if( (dev_data_file.crnt_size_buff - length) < 0){
+		printk(KERN_INFO "chardev: buffer overflow");
+		return 0;
 	}
 	dev_data_file.crnt_size_buff -= length;
 	return length;
