@@ -173,7 +173,7 @@ static int __init dev_init(void)
 	dev_data_file.data_buff = kmalloc(dev_data_file.size_buff * sizeof(char), GFP_KERNEL);
 	if(!dev_data_file.data_buff)
 	{
-		pr_err("chardev: copy_from_user failed");
+		pr_err("chardev: allovate memory failed");
 		return -ENOMEM;
 	}
 	printk(KERN_INFO "Buffer create: %d",dev_data_file.size_buff);
@@ -184,7 +184,7 @@ static int __init dev_init(void)
 		pr_err("register_chrdev failed: %d\n", major);
 		return major;
 	}
-	pr_info("chrdev: register_chrdev ok, major = %d\n", major);
+	pr_info("chardev: register_chrdev ok, major = %d\n", major);
 	
 	/* Create device class */
 	pclass = class_create(THIS_MODULE, CLASS_NAME);
@@ -193,35 +193,43 @@ static int __init dev_init(void)
 		pr_err("chrdev class_create failed\n");
 		return PTR_ERR(pclass);
 	}
-	printk("chrdev class created successfully\n");
+	printk("chardev class created successfully\n");
 	
 	retval = class_create_file(pclass, &sysfs);
 	if(retval < 0)
 	{
-		class_destroy(pclass);
-		unregister_chrdev(major, DEVICE_NAME);
-		pr_err("chrdev create failed\n");
+		goto error;
 	}
 	/* Automaticly registrate device */
 	pdev = device_create(pclass, NULL, MKDEV(major, 0), NULL, DEVICE_NAME);
 	if (IS_ERR(pdev)) {
-		class_destroy(pclass);
-		unregister_chrdev(major, DEVICE_NAME);
-		pr_err("chrdev create failed\n");
-		return PTR_ERR(pdev);
+		goto error;
 	}
-	printk("chrdev node created successfully\n");
-	device_create_file(pdev, &my_dev_attr);
+	printk("chardev node created successfully\n");
+	retval = device_create_file(pdev, &my_dev_attr);
+	if(retval < 0)
+	{
+		goto error;
+	}
 	/* Create proc file */
 	proc_file = proc_create(DEVICE_NAME, S_IFREG | S_IRUGO | S_IWUGO, NULL, &proc_fops);
     if (NULL == proc_file){
-    	printk("chrdev proc_file not created\n");
+    	printk("chardev proc_file not created\n");
     	return -EFAULT;
     }
     printk("chrdev proc_file created successfully\n");
 
-	printk("chrdev module loaded\n");
+	printk("chardev module loaded\n");
+	
 	return 0;
+	
+	error:
+		kfree(dev_data_file.data_buff);
+		dev_data_file.data_buff = NULL;
+		class_destroy(pclass);
+		unregister_chrdev(major, DEVICE_NAME);
+		pr_err("chardev create failed\n");
+		return PTR_ERR(pdev);
 }
 
 static void __exit dev_exit(void) 
@@ -241,7 +249,7 @@ static void __exit dev_exit(void)
 	class_destroy(pclass);
 	unregister_chrdev(major, DEVICE_NAME);
 
-	printk("chrdev: module exited\n");
+	printk("chardev: module exited\n");
 }
 
 /**************************************************************************************************/
