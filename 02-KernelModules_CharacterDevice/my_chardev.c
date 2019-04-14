@@ -171,8 +171,7 @@ static int __init dev_init(void)
 	dev_data_file.crnt_size_buff = dev_data_file.size_buff;
 
 	dev_data_file.data_buff = kmalloc(dev_data_file.size_buff * sizeof(char), GFP_KERNEL);
-	if(!dev_data_file.data_buff)
-	{
+	if(!dev_data_file.data_buff){
 		pr_err("chardev: allovate memory failed");
 		return -ENOMEM;
 	}
@@ -181,7 +180,7 @@ static int __init dev_init(void)
 	/* Set dynamicly major number for device */
 	major = register_chrdev(0, DEVICE_NAME, &fops);
 	if (major < 0) {
-		pr_err("register_chrdev failed: %d\n", major);
+		pr_err("register_chradev failed: %d\n", major);
 		return major;
 	}
 	pr_info("chardev: register_chrdev ok, major = %d\n", major);
@@ -196,8 +195,7 @@ static int __init dev_init(void)
 	printk("chardev class created successfully\n");
 	
 	retval = class_create_file(pclass, &sysfs);
-	if(retval < 0)
-	{
+	if(retval < 0){
 		goto error;
 	}
 	/* Automaticly registrate device */
@@ -207,8 +205,7 @@ static int __init dev_init(void)
 	}
 	printk("chardev node created successfully\n");
 	retval = device_create_file(pdev, &my_dev_attr);
-	if(retval < 0)
-	{
+	if(retval < 0){
 		goto error;
 	}
 	/* Create proc file */
@@ -226,9 +223,10 @@ static int __init dev_init(void)
 	error:
 		kfree(dev_data_file.data_buff);
 		dev_data_file.data_buff = NULL;
+		
+		device_destroy(pclass, MKDEV(major, 0));
 		class_destroy(pclass);
 		unregister_chrdev(major, DEVICE_NAME);
-		pr_err("chardev create failed\n");
 		return PTR_ERR(pdev);
 }
 
@@ -240,8 +238,7 @@ static void __exit dev_exit(void)
 	dev_data_file.data_buff = NULL;
 
 	/*Unset and unregistrate device and its class */
-	if (proc_file)
-    {
+	if (proc_file){
         remove_proc_entry(DEVICE_NAME, NULL);
         proc_file = NULL;
     }
