@@ -163,20 +163,6 @@ static int __init dev_init(void)
 {
 	int retval;
 
-	dev_data_file.size_buff = buffer_size;
-	/* Create buffer */
-	if(dev_data_file.size_buff < DEFAULT_SIZE_BUFF)
-		dev_data_file.size_buff = DEFAULT_SIZE_BUFF;
-	
-	dev_data_file.crnt_size_buff = dev_data_file.size_buff;
-
-	dev_data_file.data_buff = kmalloc(dev_data_file.size_buff * sizeof(char), GFP_KERNEL);
-	if(!dev_data_file.data_buff){
-		pr_err("chardev: allovate memory failed");
-		return -ENOMEM;
-	}
-	printk(KERN_INFO "Buffer create: %d",dev_data_file.size_buff);
-
 	/* Set dynamicly major number for device */
 	major = register_chrdev(0, DEVICE_NAME, &fops);
 	if (major < 0) {
@@ -215,15 +201,26 @@ static int __init dev_init(void)
     	return -EFAULT;
     }
     printk("chrdev proc_file created successfully\n");
+    
+	dev_data_file.size_buff = buffer_size;
+	/* Create buffer */
+	if(dev_data_file.size_buff < DEFAULT_SIZE_BUFF)
+		dev_data_file.size_buff = DEFAULT_SIZE_BUFF;
+	
+	dev_data_file.crnt_size_buff = dev_data_file.size_buff;
+
+	dev_data_file.data_buff = kmalloc(dev_data_file.size_buff * sizeof(char), GFP_KERNEL);
+	if(!dev_data_file.data_buff){
+		pr_err("chardev: allovate memory failed");
+		return -ENOMEM;
+	}
+	printk(KERN_INFO "Buffer create: %d",dev_data_file.size_buff);
 
 	printk("chardev module loaded\n");
 	
 	return 0;
 	
 	error:
-		kfree(dev_data_file.data_buff);
-		dev_data_file.data_buff = NULL;
-		
 		device_destroy(pclass, MKDEV(major, 0));
 		class_destroy(pclass);
 		unregister_chrdev(major, DEVICE_NAME);
@@ -234,9 +231,10 @@ static void __exit dev_exit(void)
 {
 	/* Clear up device buffer and free memory */
 	memset(dev_data_file.data_buff, 0, dev_data_file.size_buff);
-	kfree(dev_data_file.data_buff);
-	dev_data_file.data_buff = NULL;
-
+	if(dev_data_file.data_buff){
+		kfree(dev_data_file.data_buff);
+		dev_data_file.data_buff = NULL;
+	}
 	/*Unset and unregistrate device and its class */
 	if (proc_file){
         remove_proc_entry(DEVICE_NAME, NULL);
