@@ -12,6 +12,7 @@
 #include <linux/proc_fs.h>
 #include <linux/kobject.h> // for kobj and kobj_create
 #include <linux/sysfs.h> // for sysfs_create_file
+#include <linux/err.h> // for IS_ERR macro
 
 
 MODULE_LICENSE("GPL");
@@ -118,13 +119,17 @@ static dev_t dev; // major and minor number
 
 static struct cdev my_dev;
 static struct class *my_class;
-void init(void){
-    alloc_chrdev_region(&dev, 0/*statring from minor number 0*/, NUMBER_OF_DEVICES, DEVICE_NAME); //ask kernel to allocate free major number
+static int init(void){
+    if(0 >= alloc_chrdev_region(&dev, 0/*statring from minor number 0*/, NUMBER_OF_DEVICES, DEVICE_NAME)) //ask kernel to allocate free major number
+        return -1;
     cdev_init(&my_dev, &my_fops);
-    cdev_add(&my_dev, dev, 1);
+    if(0 > cdev_add(&my_dev, dev, 1))
+        return -1;
     my_class = class_create(THIS_MODULE, "Char_driver");
+    if(IS_ERR(my_class))
+        return -1;
     device_create(my_class, NULL, dev, NULL, DEVICE_NAME );
-    
+    return 0;
     printk(KERN_DEBUG "Add dev %d -- %d\n", MAJOR(dev), MINOR(dev));
 }
 
@@ -136,7 +141,7 @@ void init(void){
 ssize_t proc_read_info (struct file *file_p, char __user *user_buf, size_t len, loff_t *offset){
     char answer[100];
     if(*offset != 0)
-            return 0;
+        return 0;
     int answ_length = sprintf(answer, "Size of written data: %d\n"
                     "Size of buffer: %d\n", data_size, BUF_SIZE );
     *offset += answ_length;
@@ -179,8 +184,10 @@ ssize_t store_clear(struct kobject *kobj, struct kobj_attribute *attr, const cha
 static struct  kobject *kobj_dir;
 static struct kobj_attribute file_attr = __ATTR(SYS_FILE_NAME, S_IWUSR, NULL, store_clear);
 
-void init_sys(void){
+int init_sys(void){
     kobj_dir = kobject_create_and_add(SYS_DIR_NAME, NULL);
+    if(IS_ERR(kobj_dir))
+        return -1;
     sysfs_create_file(kobj_dir, &file_attr.attr);
 }
 
@@ -188,18 +195,29 @@ void init_sys(void){
 
 
 static int __init char_driver_init(void){
+    int retval = 0;
     if(BUF_SIZE < MIN_BUF_SIZE){
         printk( KERN_DEBUG "Buffer size must me at least 1024 bytes.\n");
-        return -1;
+        retval =  -1;
+        goto out;
     }
-    if(create_buffer() < 0){
+    if(0 > create_buffer()){
         printk( KERN_DEBUG "Failed to allocate memory...\n");
-        return -1;
+        retval =  -1;
+        goto out;
     }
-    init();
+    if(-1 == init()){
+        retval =  -1;
+        goto out;
+    }
     init_proc();
-    init_sys();
-    return 0;
+    if(-1 == init_sys()){
+        printk( KERN_DEBUG "Failed to init sys...\n");
+        retval =  -1;
+        goto out;
+    }
+    out:
+        return retval;
 }
 
 static void __exit char_driver_exit(void){
