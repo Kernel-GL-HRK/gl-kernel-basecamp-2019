@@ -8,8 +8,8 @@ echo "write path to dev file as path/to/dev/file"
 read dev_file_path
 echo "write path to sys file as path/to/sys/file"
 read sys_file_path
-read test_file_path
 echo "write path to test file as path/to/test/file"
+read test_file_path
 echo "write module name as module_name.ko"
 read mod_name
 
