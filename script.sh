@@ -1,4 +1,5 @@
 !#/bin/bash
+
 echo "write path to module directory as path/to/module_directory"
 read home_path
 echo "write path to proc file as path/to/proc/file"
@@ -58,5 +59,3 @@ echo "reading data from device"
 cat /dev/chtest
 echo "unloading module"
 rmmod $mod_name
-
-
