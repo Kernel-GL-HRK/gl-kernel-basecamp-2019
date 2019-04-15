@@ -187,20 +187,26 @@ static void sys_cleanup(void)
 static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *offset)
 {
 		int error_count = 0;
+ if(B_size==0){
+		ssize_t size_of_message = strlen(message);
+    }
+    else{
+	ssize_t size_of_message = strlen(new_buff);
+    }
    // copy_to_user has the format ( * to, *from, size) and returns 0 on success
     if (B_size == 0){
 		error_count = copy_to_user(buffer, message, size_of_message);
     }
-    else 
+     else {
 		error_count = copy_to_user(buffer, new_buff, size_of_message);
- 
-    if (error_count==0){            // if true then have success
-		printk(KERN_INFO "chtest: Sent %d characters to the user\n", size_of_message);
-		return (size_of_message=0);  // clear the position to the start and return 0
     }
-    else {
-		printk(KERN_INFO "chtest: Failed to send %d characters to the user\n", error_count);
-		return -EFAULT;              // Failed -- return a bad address message (i.e. -14)
+		*offset += size_of_message - error_count;
+ 
+    if(*offset > size_of_message)
+		return 0;
+    else{
+		printk(KERN_INFO "chtest: Sent %d characters to the user\n", size_of_message);
+		return size_of_message;
     }
 }
  
