@@ -1,4 +1,6 @@
 #include <linux/moduleparam.h>		//library
+#include <linux/proc_fs.h>		//library
+#include <linux/slab.h>
 #include <linux/init.h>           // Macros used to mark up functions e.g. __init __exit
 #include <linux/module.h>         // Core header for loading LKMs into the kernel
 #include <linux/device.h>         // Header to support the kernel Driver Model
@@ -23,12 +25,15 @@ static short  size_of_message;              ///< Used to remember the size of th
 static int    numberOpens = 0;              ///< Counts the number of times the device is opened
 static struct class*  Driver_Class  = NULL; ///< The device-driver class struct pointer
 static struct device* Driver_Device = NULL; ///< The device-driver device struct pointer
-
+tatic struct proc_dir_entry *procptr;
 					//Prototypes
+static ssize_t procwrite(struct file *file, const char __user *ubuf,size_t count, loff_t *ppos); //proc prototype
+static ssize_t procread(struct file *file, char __user *ubuf,size_t count, loff_t *ppos);//proc prototype
 static int     dev_open(struct inode *, struct file *);
 static int     dev_release(struct inode *, struct file *);
 static ssize_t dev_read(struct file *, char *, size_t, loff_t *);
 static ssize_t dev_write(struct file *, const char *, size_t, loff_t *);
+
 
 
 static struct file_operations fops =
@@ -40,11 +45,19 @@ static struct file_operations fops =
 	.owner = THIS_MODULE,
 };
 
+static struct file_operations procops = 
+{
+	.owner = THIS_MODULE,
+	.read = procread,
+	.write = procwrite,
+};
 
 
 
 
-static int __init chtest_init(void){
+
+static int __init chtest_init(void)
+{
 	printk(KERN_INFO "chtest: Initializing the chtest LKM\n");
     if (B_size > 0) {
 		new_buff = kzalloc(B_size*sizeof(*new_buff),GFP_KERNEL);
@@ -78,7 +91,8 @@ static int __init chtest_init(void){
 		return PTR_ERR(Driver_Device);
     }
 		printk(KERN_INFO "chtest: device class created correctly\n"); // Made it! device was initialized
-
+		procptr=proc_create("chtest",0666,NULL,&procops);       // proc create
+		printk(KERN_INFO "chtest  proc entry created successfully");
 		return 0;
 
 }
@@ -86,10 +100,10 @@ static int __init chtest_init(void){
 static void __exit chtest_exit(void)
 {
     if(B_size == 0){
-    kfree(new_buff);
+		kfree(new_buff);
     }
+
 		proc_cleanup();				    //proc_cleanup
-		sys_cleanup();       	 //kobject_put(chtest_kobject);			    //sys_cleanup
 		device_destroy(Driver_Class, MKDEV(majorNumber, 0));     // remove the device
 		class_unregister(Driver_Class);                          // unregister the device class
 		class_destroy(Driver_Class);                             // remove the device class
@@ -107,15 +121,50 @@ static int dev_open(struct inode *inodep, struct file *filep)
  
 
 
+						//proc
+static ssize_t procwrite(struct file *file, const char __user *ubuf,size_t count, loff_t *ppos) //proc write func 
+{
+		printk( KERN_DEBUG "procwrite handler\n");
+		return -1;
+}
+
+ 
+static ssize_t procread(struct file *file, char __user *ubuf,size_t count, loff_t *ppos) //proc read func 
+{
+		int BUFSIZE = 100;
+		char buf[BUFSIZE];
+		int len=0;
+    if(*ppos > 0 || count < BUFSIZE)
+		return 0;
+    if(B_size > 0) {
+		len += sprintf(buf,"BUFFER_SIZE = %d\n",B_size );
+		len += sprintf(buf + len,"USED_BUFFER = %d",size_of_message );
+    }
+    else {
+		len += sprintf(buf,"BUFFER_SIZE = %d\n",BSIZE );
+		len += sprintf(buf + len,"USED_BUFFER = %d\n",size_of_message);
+    }
+    if(copy_to_user(ubuf,buf,len))
+		return -EFAULT;
+		*ppos = len;
+		return len;
+}
+ 
+static void proc_cleanup(void)    //proc cleanup func
+{
+		remove_proc_entry("chtest",NULL);
+}
+
+
 static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *offset)
 {
 		int error_count = 0;
    // copy_to_user has the format ( * to, *from, size) and returns 0 on success
     if (B_size == 0){
-error_count = copy_to_user(buffer, message, size_of_message);
+		error_count = copy_to_user(buffer, message, size_of_message);
     }
     else 
-	error_count = copy_to_user(buffer, new_buff, size_of_message);
+		error_count = copy_to_user(buffer, new_buff, size_of_message);
  
     if (error_count==0){            // if true then have success
 		printk(KERN_INFO "chtest: Sent %d characters to the user\n", size_of_message);
