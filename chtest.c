@@ -25,10 +25,16 @@ static short  size_of_message;              ///< Used to remember the size of th
 static int    numberOpens = 0;              ///< Counts the number of times the device is opened
 static struct class*  Driver_Class  = NULL; ///< The device-driver class struct pointer
 static struct device* Driver_Device = NULL; ///< The device-driver device struct pointer
-tatic struct proc_dir_entry *procptr;
+static struct proc_dir_entry *procptr;
+static struct kobject *chtest_kobject;
+
 					//Prototypes
 static ssize_t procwrite(struct file *file, const char __user *ubuf,size_t count, loff_t *ppos); //proc prototype
 static ssize_t procread(struct file *file, char __user *ubuf,size_t count, loff_t *ppos);//proc prototype
+
+static ssize_t clrflag_show(struct kobject *kobj, struct kobj_attribute *chtest_kobject, char *buf); //sys prototype
+static ssize_t clrflag_store(struct kobject *kobj,struct kobj_attribute *chtest_kobject, char *buf, size_t count); //sys prototype
+
 static int     dev_open(struct inode *, struct file *);
 static int     dev_release(struct inode *, struct file *);
 static ssize_t dev_read(struct file *, char *, size_t, loff_t *);
@@ -53,7 +59,7 @@ static struct file_operations procops =
 };
 
 
-
+static struct kobj_attribute sys_attribute =__ATTR(clrflag, 0666, clrflag_show,clrflag_store);
 
 
 static int __init chtest_init(void)
@@ -93,24 +99,20 @@ static int __init chtest_init(void)
 		printk(KERN_INFO "chtest: device class created correctly\n"); // Made it! device was initialized
 		procptr=proc_create("chtest",0666,NULL,&procops);       // proc create
 		printk(KERN_INFO "chtest  proc entry created successfully");
+		chtest_kobject = kobject_create_and_add("chtestflag",kernel_kobj); //sys
+    if(!chtest_kobject) //sys init
+		return -ENOMEM;
+
+		int error = sysfs_create_file(chtest_kobject, &sys_attribute.attr);
+    if (error){
+		printk(KERN_ALERT "failed to create the clrflag file in /sys/kernel/chtest_kobject\n");
+    }
+
+
 		return 0;
 
 }
 
-static void __exit chtest_exit(void)
-{
-    if(B_size == 0){
-		kfree(new_buff);
-    }
-
-		proc_cleanup();				    //proc_cleanup
-		device_destroy(Driver_Class, MKDEV(majorNumber, 0));     // remove the device
-		class_unregister(Driver_Class);                          // unregister the device class
-		class_destroy(Driver_Class);                             // remove the device class
-		unregister_chrdev(majorNumber, DEVICE_NAME);             // unregister the major number
-
-		printk(KERN_INFO "chtest: Goodbye from the LKM!\n");
-}
 
 static int dev_open(struct inode *inodep, struct file *filep)
 {
@@ -155,6 +157,32 @@ static void proc_cleanup(void)    //proc cleanup func
 		remove_proc_entry("chtest",NULL);
 }
 
+			//Sys
+static ssize_t clrflag_show(struct kobject *kobj, struct kobj_attribute *chtest_kobject, char *buf)
+{
+		return sprintf(buf, "%d\n", clrflag);
+}
+
+static ssize_t clrflag_store(struct kobject *kobj, struct kobj_attribute *chtest_kobject,  char *buf, size_t count)
+{
+		sscanf(buf, "%du", &clrflag);
+
+    if (clrflag == 1){
+    if(B_size > 0){
+		memset(new_buff,0,B_size);
+    }
+    else memset(&message[0],0,BSIZE);
+    }
+		size_of_message =0;
+		return count;							
+}
+
+static void sys_cleanup(void)
+{
+
+		kobject_put(chtest_kobject);
+}
+
 
 static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *offset)
 {
@@ -194,17 +222,28 @@ static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, lof
 }
 
 
-
-
-
-
 static int dev_release(struct inode *inodep, struct file *filep)
 {
 		printk(KERN_INFO "chtest: Device successfully closed\n");
 		return 0;
 }
 
+
+static void __exit chtest_exit(void)
+{
+    if(B_size == 0){
+		kfree(new_buff);
+    }
+		sys_cleanup();       	 		    //sys_cleanup
+		proc_cleanup();				    //proc_cleanup
+		device_destroy(Driver_Class, MKDEV(majorNumber, 0));     // remove the device
+		class_unregister(Driver_Class);                          // unregister the device class
+		class_destroy(Driver_Class);                             // remove the device class
+		unregister_chrdev(majorNumber, DEVICE_NAME);             // unregister the major number
+
+		printk(KERN_INFO "chtest: Goodbye from the LKM!\n");
+}
+
 module_init(chtest_init);
 module_exit(chtest_exit);
-
 
