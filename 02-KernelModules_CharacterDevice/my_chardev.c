@@ -88,6 +88,14 @@ struct class_attribute sysfs = __ATTR(cleanup, 0664, NULL, sysfs_write);
 
 /**************************************  Interface for /dev ***************************************/
 
+/**
+ * @brief      { function_description }
+ *
+ * @param      i     { parameter_description }
+ * @param      f     { parameter_description }
+ *
+ * @return     { description_of_the_return_value }
+ */
 static int dev_open(struct inode *i, struct file *f)
 {
 	if (is_device_open) {
@@ -191,9 +199,7 @@ static int __init dev_init(void)
 	}
 	printk("chardev node created successfully\n");
 	retval = device_create_file(pdev, &my_dev_attr);
-	if(retval < 0){
-		goto error;
-	}
+
 	/* Create proc file */
 	proc_file = proc_create(DEVICE_NAME, S_IFREG | S_IRUGO | S_IWUGO, NULL, &proc_fops);
     if (NULL == proc_file){
@@ -214,6 +220,7 @@ static int __init dev_init(void)
 		pr_err("chardev: allovate memory failed");
 		return -ENOMEM;
 	}
+	memset(dev_data_file.data_buff,0,dev_data_file.size_buff);
 	printk(KERN_INFO "Buffer create: %d",dev_data_file.size_buff);
 
 	printk("chardev module loaded\n");
