@@ -25,6 +25,25 @@ static struct class*  Driver_Class  = NULL; ///< The device-driver class struct 
 static struct device* Driver_Device = NULL; ///< The device-driver device struct pointer
 
 					//Prototypes
+static int     dev_open(struct inode *, struct file *);
+static int     dev_release(struct inode *, struct file *);
+static ssize_t dev_read(struct file *, char *, size_t, loff_t *);
+static ssize_t dev_write(struct file *, const char *, size_t, loff_t *);
+
+
+static struct file_operations fops =
+{
+	.open = dev_open,
+	.read = dev_read,
+	.write = dev_write,
+	.release = dev_release,
+	.owner = THIS_MODULE,
+};
+
+
+
+
+
 static int __init chtest_init(void){
 	printk(KERN_INFO "chtest: Initializing the chtest LKM\n");
     if (B_size > 0) {
@@ -77,6 +96,63 @@ static void __exit chtest_exit(void)
 		unregister_chrdev(majorNumber, DEVICE_NAME);             // unregister the major number
 
 		printk(KERN_INFO "chtest: Goodbye from the LKM!\n");
+}
+
+static int dev_open(struct inode *inodep, struct file *filep)
+{
+		numberOpens++;
+		printk(KERN_INFO "chtest: Device has been opened %d time(s)\n", numberOpens);
+		return 0;
+}
+ 
+
+
+static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *offset)
+{
+		int error_count = 0;
+   // copy_to_user has the format ( * to, *from, size) and returns 0 on success
+    if (B_size == 0){
+error_count = copy_to_user(buffer, message, size_of_message);
+    }
+    else 
+	error_count = copy_to_user(buffer, new_buff, size_of_message);
+ 
+    if (error_count==0){            // if true then have success
+		printk(KERN_INFO "chtest: Sent %d characters to the user\n", size_of_message);
+		return (size_of_message=0);  // clear the position to the start and return 0
+    }
+    else {
+		printk(KERN_INFO "chtest: Failed to send %d characters to the user\n", error_count);
+		return -EFAULT;              // Failed -- return a bad address message (i.e. -14)
+    }
+}
+ 
+
+static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, loff_t *offset)
+{
+    if(B_size == 0) {
+		copy_from_user(message, buffer, len);   // appending received string with its length
+		size_of_message = strlen(message); 
+    }                // store the length of the stored message
+    else {
+		copy_from_user(new_buff, buffer, len);
+		size_of_message = strlen(new_buff); 
+    } 
+
+
+		printk(KERN_INFO "chtest: Received %zu characters from the user\n", len);
+		return len;
+}
+
+
+
+
+
+
+static int dev_release(struct inode *inodep, struct file *filep)
+{
+		printk(KERN_INFO "chtest: Device successfully closed\n");
+		return 0;
 }
 
 module_init(chtest_init);
