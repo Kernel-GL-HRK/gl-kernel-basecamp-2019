@@ -1,4 +1,4 @@
-KDIR := /home/eduard/Kernel_i386
+KDIR ?= /home/eduard/Kernel_i386
 
 obj-m := character_driver.o
 
