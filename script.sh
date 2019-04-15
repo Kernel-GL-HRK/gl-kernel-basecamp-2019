@@ -1,16 +1,16 @@
 !#/bin/bash
 
-echo "write path to module directory as path/to/module_directory"
+echo "input path to module directory as path/to/module_directory"
 read home_path
-echo "write path to proc file as path/to/proc/file"
+echo "input path to proc file as path/to/proc/file"
 read proc_file_path
-echo "write path to dev file as path/to/dev/file"
+echo "input path to dev file as path/to/dev/file"
 read dev_file_path
-echo "write path to sys file as path/to/sys/file"
+echo "input path to sys file as path/to/sys/file"
 read sys_file_path
-echo "write path to test file as path/to/test/file"
+echo "input path to test file as path/to/test/file"
 read test_file_path
-echo "write module name as module_name.ko"
+echo "input module name as module_name.ko"
 read mod_name
 
 
