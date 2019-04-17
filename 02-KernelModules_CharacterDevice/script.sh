@@ -3,7 +3,7 @@
 DRIVER_NAME="chrdev.ko"
 DRIVER_PATH="$MODULE_OBJECT$DRIVER_NAME"
 PROC_PATH="/proc/chrdev-info"
-SYS_PATH="/sys/kernel/chrdev-flag/clear_memory"
+SYS_PATH="/sys/kernel/chrdev-flag/data_clear"
 DEV_PATH="/dev/chrdev_cdev0"
 
 insmod $DRIVER_PATH BUFFER_SIZE =1500
