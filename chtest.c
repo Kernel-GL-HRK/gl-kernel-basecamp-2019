@@ -76,11 +76,11 @@ if (majorNumber < 0) {
    // Register the device class
 		Driver_Class = class_create(THIS_MODULE, CLASS_NAME);
 if (IS_ERR(Driver_Class)) {                // Check for error and clean up if there is
-	unregister_chrdev(majorNumber, DEVICE_NAME);
-	printk(KERN_ALERT "Failed to register device class\n");
-	return PTR_ERR(Driver_Class);          // Correct way to return an error on a pointer
+		unregister_chrdev(majorNumber, DEVICE_NAME);
+		printk(KERN_ALERT "Failed to register device class\n");
+		return PTR_ERR(Driver_Class);          // Correct way to return an error on a pointer
 }
-	printk(KERN_INFO "chtest: device class registered correctly\n");
+		printk(KERN_INFO "chtest: device class registered correctly\n");
 
    // Register the device driver
 	Driver_Device = device_create(Driver_Class, NULL, MKDEV(majorNumber, 0), NULL, DEVICE_NAME);
@@ -119,8 +119,8 @@ static ssize_t procread(struct file *file, char __user *ubuf, size_t count, loff
 if (*ppos > 0 || count < BUFSIZE)
 		return 0;
 if (B_size > 0) {
-	len += sprintf(buf, "BUFFER_SIZE = %d\n", B_size);
-	len += sprintf(buf + len, "USED_BUFFER = %d", size_of_message);
+		len += sprintf(buf, "BUFFER_SIZE = %d\n", B_size);
+		len += sprintf(buf + len, "USED_BUFFER = %d", size_of_message);
 } else {
 		len += sprintf(buf, "BUFFER_SIZE = %d\n", BSIZE);
 		len += sprintf(buf + len, "USED_BUFFER = %d\n", size_of_message);
@@ -187,7 +187,7 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
 if (B_size == 0) {
 		ssize_t size_of_message = strlen(message);
 } else {
-	ssize_t size_of_message = strlen(new_buff);
+		ssize_t size_of_message = strlen(new_buff);
 }
    // copy_to_user has the format ( * to, *from, size) and returns 0 on success
 if (B_size == 0) {
