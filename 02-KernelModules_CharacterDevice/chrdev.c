@@ -205,14 +205,12 @@ static int __init chrdev_init(void){
 	}
 	printk(KERN_INFO "chrdev: Device initialized succesfully\n");
 
-	buffer_create();
-	create_proc();
-	
+	if (0 == err) err = buffer_create();
+	if (0 == err) err = create_proc();
 	chd_kobject = kobject_create_and_add(MODULE_NAME, kernel_kobj);
-	err = sysfs_create_file(chd_kobject, &sysfs_attribute.attr);
+	if (0 == err) err = sysfs_create_file(chd_kobject, &sysfs_attribute.attr);
 	
-	if(err) return err;
-	return 0;
+	return err;
 }
 
 static void __exit chrdev_exit(void){
