@@ -4,9 +4,10 @@
 #include <linux/err.h>
 #include <linux/i2c.h>
 #include <linux/i2c-dev.h>
-
 #include "mpu6050-regs.h"
 
+#define DIV	340
+#define MULTIPL	1000
 
 struct mpu6050_data {
 	struct i2c_client *drv_client;
