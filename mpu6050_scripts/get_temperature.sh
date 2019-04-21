@@ -19,5 +19,10 @@ do
 		TEMP=$(( -(0x10000 - TEMP) ))
 	fi
 
+	printf "Celsius: "
+	bc -l <<< "scale=3; $TEMP/340 + 36.53"
+	printf "Fahrenheit: "
+	bc -l <<< "scale=3; ($TEMP/340 + 36.53) * 1.8 + 32"
+	echo "------------------"
 	sleep 1
 done
