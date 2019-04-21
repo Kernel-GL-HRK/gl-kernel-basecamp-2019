@@ -20,6 +20,10 @@ static struct mpu6050_data g_mpu6050_data;
 static int mpu6050_read_data(void)
 {
 	int temp;
+	int value;
+	short int_part_fahr;
+	short fract_part_fahr;
+
 	struct i2c_client *drv_client = g_mpu6050_data.drv_client;
 
 	if (drv_client == 0)
