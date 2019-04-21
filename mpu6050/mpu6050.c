@@ -13,7 +13,7 @@ struct mpu6050_data {
 	struct i2c_client *drv_client;
 	int accel_values[3];
 	int gyro_values[3];
-	int temperature;
+	short temperature[2];
 };
 
 static struct mpu6050_data g_mpu6050_data;
@@ -41,8 +41,14 @@ static int mpu6050_read_data(void)
 	/* Temperature in degrees C =
 	 * (TEMP_OUT Register Value  as a signed quantity)/340 + 36.53
 	 */
-	temp = (s16)((u16)i2c_smbus_read_word_swapped(drv_client, REG_TEMP_OUT_H));
-	g_mpu6050_data.temperature = (temp + 12420 + 170) / 340;
+	value = (s16)((u16)i2c_smbus_read_word_swapped(drv_client, REG_TEMP_OUT_H));
+
+	temp = ((((value + 12420) * MULTIPL) / DIV) * 9) / 5 + 32 * MULTIPL;
+	int_part_fahr = temp / MULTIPL;
+	fract_part_fahr = temp % MULTIPL;
+
+	g_mpu6050_data.temperature[0] = int_part_fahr;
+	g_mpu6050_data.temperature[1] = fract_part_fahr;
 
 	dev_info(&drv_client->dev, "sensor data read:\n");
 	dev_info(&drv_client->dev, "ACCEL[X,Y,Z] = [%d, %d, %d]\n",
@@ -53,8 +59,8 @@ static int mpu6050_read_data(void)
 		g_mpu6050_data.gyro_values[0],
 		g_mpu6050_data.gyro_values[1],
 		g_mpu6050_data.gyro_values[2]);
-	dev_info(&drv_client->dev, "TEMP = %d\n",
-		g_mpu6050_data.temperature);
+	dev_info(&drv_client->dev, "TEMP = [%d.%03d F]\n",
+		g_mpu6050_data.temperature[0], g_mpu6050_data.temperature[1]);
 
 	return 0;
 }
@@ -185,8 +191,9 @@ static ssize_t temp_show(struct class *class,
 			 struct class_attribute *attr, char *buf)
 {
 	mpu6050_read_data();
-
-	sprintf(buf, "%d\n", g_mpu6050_data.temperature);
+	sprintf(buf, "%d.%03d F\n", 
+		g_mpu6050_data.temperature[0],
+		g_mpu6050_data.temperature[1]);
 	return strlen(buf);
 }
 
