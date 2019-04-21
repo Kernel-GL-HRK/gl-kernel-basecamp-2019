@@ -104,6 +104,10 @@ static ssize_t clean_up_buffer_store(struct class *class,
 		pr_info(CLASS_NAME
 			": (sysfs) write a nonzero integer, let's clear the buffer\n");
 		data_size = 0;
+		sprintf(proc_buffer[PROC_USED_BUFFER_VOLUME_ID], "%zu",
+			data_size);
+		proc_msg_length[PROC_USED_BUFFER_VOLUME_ID] =
+			strlen(proc_buffer[PROC_USED_BUFFER_VOLUME_ID]);
 	} else {
 		pr_info(CLASS_NAME ": (sysfs) zero value is ignored\n");
 	}
@@ -342,10 +346,10 @@ static int xchar_init(void)
 
 	major = register_chrdev(0, DEVICE_NAME, &fops);
 	if (major < 0) {
-		pr_err(CLASS_NAME ": register_xchar failed: %d\n", major);
+		pr_err(CLASS_NAME ": register_chrdev failed: %d\n", major);
 		return major;
 	}
-	pr_info(CLASS_NAME ": register_xchar ok, major = %d\n", major);
+	pr_info(CLASS_NAME ": register_chrdev ok, major = %d\n", major);
 
 	pclass = class_create(THIS_MODULE, CLASS_NAME);
 	if (IS_ERR(pclass)) {
