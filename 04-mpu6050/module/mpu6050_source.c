@@ -32,6 +32,38 @@
 #define REG_PWR_MGMT_2		0x6C
 #define REG_WHO_AM_I		0x75
 
+// Define data values
+
+struct mpu6050_i2c_data {
+	struct i2c_client *drv_client;
+	int accelerometer_values[3];
+};
+
+static struct mpu6050_i2c_data mpu6050_data;
+
+static int mpu6050_read_data(void)
+{
+	
+	struct i2c_client *drv_client = mpu6050_data.drv_client;
+
+	if (drv_client == 0)
+		return -ENODEV;
+
+	// Accelerometer data reading
+    
+	mpu6050_data.accelerometer_values[0] = (s16)((u16)i2c_smbus_read_word_swapped(drv_client, REG_ACCEL_XOUT_H));
+	mpu6050_data.accelerometer_values[1] = (s16)((u16)i2c_smbus_read_word_swapped(drv_client, REG_ACCEL_YOUT_H));
+	mpu6050_data.accelerometer_values[2] = (s16)((u16)i2c_smbus_read_word_swapped(drv_client, REG_ACCEL_ZOUT_H));
+
+	dev_info(&drv_client->dev, "Sensor data read:\n");
+	dev_info(&drv_client->dev, "ACCEL[X,Y,Z] = [%d, %d, %d]\n",
+		mpu6050_data.accelerometer_values[0],
+		mpu6050_data.accelerometer_values[1],
+		mpu6050_data.accelerometer_values[2]);
+
+	return 0;
+}
+
 // Probe/remove device
 
 static int mpu6050_probe(struct i2c_client *drv_client, const struct i2c_device_id *id)
