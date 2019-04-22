@@ -4,3 +4,5 @@ then
 	echo "Run as root!"
 	exit
 fi
+
+i2cset -y 0 0x68 0x6b 0
