@@ -22,7 +22,9 @@ COL_LIGHT_PURPLE="1;35"
 COL_LIGHT_CYAN="1;36"
 COL_WHITE="1;37"
 
-COLORIZE=1
+if [[ "$1" != "--nocolor" ]]; then
+    COLORIZE=1
+fi
 
 COL_FATAL=$COL_LIGHT_RED
 COL_ERROR=$COL_RED
@@ -78,7 +80,7 @@ echo
 
 CHECKING=/dev/${DRIVER_NAME}0
 DATA=12345
-_log $COL_WARNING "$(( ++COUNTER )). Write \"$DATA\" to \"$CHECKING\""
+_log $COL_WARNING "$(( ++COUNTER )). Write \"$DATA\" to \"$CHECKING\"..."
 echo $DATA > $CHECKING
 _check_error
 echo
@@ -106,7 +108,7 @@ echo
 
 CHECKING=/dev/${DRIVER_NAME}0
 DATA=abc
-_log $COL_WARNING "$(( ++COUNTER )). Write \"$DATA\" to \"$CHECKING\""
+_log $COL_WARNING "$(( ++COUNTER )). Write \"$DATA\" to \"$CHECKING\"..."
 echo $DATA > $CHECKING
 _check_error
 echo
@@ -120,7 +122,7 @@ echo
 
 CHECKING=/sys/class/${DRIVER_NAME}/${SYS_CLEAN_UP_BUFFER}
 DATA=1
-_log $COL_WARNING "$(( ++COUNTER )). Write \"$DATA\" to \"$CHECKING\""
+_log $COL_WARNING "$(( ++COUNTER )). Write \"$DATA\" to \"$CHECKING\"..."
 echo $DATA > $CHECKING
 _check_error
 echo

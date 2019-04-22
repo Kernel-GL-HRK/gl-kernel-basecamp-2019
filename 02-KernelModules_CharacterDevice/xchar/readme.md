@@ -1,9 +1,9 @@
-# Test scenario as a result of `test.sh' execution
+# Test scenario as a result of `test.sh` execution
 
 1. Install module...
 Ok.
 
-2. Write "12345" to "/dev/xchar0"
+2. Write "12345" to "/dev/xchar0"...
 Ok.
 
 3. Checking "/proc/xchar/used_buffer_volume"...
@@ -18,14 +18,14 @@ Ok.
 "12345"
 Ok.
 
-6. Write "abc" to "/dev/xchar0"
+6. Write "abc" to "/dev/xchar0"...
 Ok.
 
 7. Checking "/proc/xchar/used_buffer_volume"...
 "4"
 Ok.
 
-8. Write "1" to "/sys/class/xchar/clean_up_buffer"
+8. Write "1" to "/sys/class/xchar/clean_up_buffer"...
 Ok.
 
 9. Checking "/proc/xchar/used_buffer_volume"...
