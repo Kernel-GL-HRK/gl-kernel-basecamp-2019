@@ -15,6 +15,10 @@ do
 	MINOR=$(i2cget -y 0 0x68 0x42)
 	
 	Temperature=$(( -(((MAJOR << 8)+ MINOR) ^ ((1 << 0x10) - 1)) ))
+
+	Fahrenheit=`bc -l <<< "scale=3; ($Temperature/340 + 36.53) * 1.8 + 32"`	
+	
+	echo "Temperature = $Fahrenheit"
 	sleep 2
 	
 done
