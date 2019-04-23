@@ -80,6 +80,7 @@ static struct file_operations proc_fops = {
 
 static int __init init(void)
 {
+        int res;
 	is_open = 0;
 	used_size = 0;
 
@@ -89,21 +90,30 @@ static int __init init(void)
 	}
 
 	cdev_init(&dev_struct, &fops);
-	cdev_add(&dev_struct, dev_num, NUMBER_OF_DEVICES);
+	res = cdev_add(&dev_struct, dev_num, NUMBER_OF_DEVICES);
+	if(res < 0)
+		goto cdev_add_error;
 
-
-	proc_dir = proc_mkdir(PROC_DIR_NAME, NULL);
+        proc_dir = proc_mkdir(PROC_DIR_NAME, NULL);
 	proc_file = proc_create(PROC_FILE_NAME, NULL, proc_dir, &proc_fops);
 
 
 	sys_dir = kobject_create_and_add(SYS_DIR_NAME, NULL);
 	sysfs_create_file(sys_dir, &sys_file_attr.attr);
 
-
-	printk("Driver loaded!\n");
-	return 0;
         buffer_too_small:
 	return -1;
+
+        cdev_add_error:
+	device_destroy(chdev_class, dev_num);
+	class_destroy(chdev_class);
+
+	unregister_chrdev_region(dev_num, NUMBER_OF_DEVICES);
+
+	kfree(buffer);
+
+	return res;
+
 }
 
 
