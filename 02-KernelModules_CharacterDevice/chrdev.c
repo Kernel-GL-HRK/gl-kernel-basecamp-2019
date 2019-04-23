@@ -8,6 +8,12 @@
 #include <linux/kernel.h>
 #include <linux/slab.h>	/* kfree(), kmalloc() */
 
+#include <linux/kobject.h>
+#include <linux/sysfs.h>
+
+#include <linux/proc_fs.h>
+#include <linux/seq_file.h>
+
 #define CLASS_NAME	"vdk-chrdev"
 #define DEVICE_NAME	"vdk-chrdev-example"
 #define BUFFER_SIZE	1024
@@ -17,14 +23,73 @@ static struct device *pdev;
 
 static int major;
 static int is_open;
-
+static int error;
 static int data_size;
 static int buffer_size = BUFFER_SIZE;
 
-module_param(buffer_size,int,0660);
+module_param(buffer_size, int, 0220);
 
 
-static unsigned char* data_buffer = NULL;
+static unsigned char *data_buffer;
+
+//-----sysfs-------
+static int cleanup;
+static struct kobject *example_kobject;
+
+
+static ssize_t sysfs_store1(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	sscanf(buf, "%du", &cleanup);
+	pr_info("chrdev: sysfs cleanup value %d\n", cleanup);
+	if (cleanup)
+		memset(data_buffer, buffer_size, sizeof(*data_buffer));
+
+	return count;
+}
+
+static struct kobj_attribute sysfs_attribute = __ATTR(cleanup, 0220, NULL, sysfs_store1);
+
+//-----sysfs-------
+
+//-----procfs-------
+
+
+static int dev_proc_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "Buffer size = %d\nData length = %d\n", buffer_size, data_size);
+	return 0;
+}
+
+static int dev_proc_open(struct inode *inode, struct  file *file)
+{
+	return single_open(file, dev_proc_show, NULL);
+}
+
+static const struct file_operations dev_proc_fops = {
+	.owner = THIS_MODULE,
+	.open = dev_proc_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+
+static int dev_proc_show(struct seq_file *m, void *v) {
+  seq_printf(m, "Buffer size = %d\nData length = %d\n", buffer_size, data_size);
+  return 0;
+}
+
+static int dev_proc_open(struct inode *inode, struct  file *file) {
+  return single_open(file, dev_proc_show, NULL);
+}
+
+static const struct file_operations dev_proc_fops = {
+  .owner = THIS_MODULE,
+  .open = dev_proc_open,
+  .read = seq_read,
+  .llseek = seq_lseek,
+  .release = single_release,
+};
+
+//-----procfs-------
 
 static int dev_open(struct inode *inodep, struct file *filep)
 {
@@ -52,7 +117,8 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
 
 	pr_info("chrdev: read from file %s\n", filep->f_path.dentry->d_iname);
 
-	if (len > data_size) len = data_size;
+	if (len > data_size)
+		len = data_size;
 
 	ret = copy_to_user(buffer, data_buffer, len);
 	if (ret) {
@@ -72,7 +138,8 @@ static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, lof
 	pr_info("chrdev: write to file %s\n", filep->f_path.dentry->d_iname);
 
 	data_size = len;
-	if (data_size > BUFFER_SIZE) data_size = BUFFER_SIZE;
+	if (data_size > BUFFER_SIZE)
+		data_size = BUFFER_SIZE;
 
 	ret = copy_from_user(data_buffer, buffer, data_size);
 	if (ret) {
@@ -86,8 +153,7 @@ static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, lof
 
 
 
-static struct file_operations fops =
-{
+static struct file_operations fops = {
 	.open = dev_open,
 	.release = dev_release,
 	.read = dev_read,
@@ -96,6 +162,7 @@ static struct file_operations fops =
 
 static int chrdev_init(void)
 {
+
 	is_open = 0;
 	data_size = 0;
 
@@ -131,17 +198,54 @@ static int chrdev_init(void)
 	}
 	pr_info("chrdev: device node created successfully\n");
 
+	example_kobject = kobject_create_and_add(DEVICE_NAME, kernel_kobj);
+
+	if (!example_kobject) {
+		pr_debug("failed to create kobject \n");
+		return -ENOMEM;
+	}
+	error = sysfs_create_file(example_kobject, &sysfs_attribute.attr);
+	if (error) {
+		pr_debug("failed to create the foo file in /sys/kernel/%s\n", DEVICE_NAME);
+		return -ENOMEM;
+	}
+	pr_info("create the file in /sys/kernel/%s\n", DEVICE_NAME);
+
+	proc_create(DEVICE_NAME, 0, NULL, &dev_proc_fops);
+
 	pr_info("chrdev: module loaded\n");
+
+    if(!example_kobject) {
+        pr_debug("failed to create kobject \n");
+        return -ENOMEM;
+    }
+    error = sysfs_create_file(example_kobject, &sysfs_attribute.attr);
+    if (error) {
+        pr_debug("failed to create the foo file in /sys/kernel/%s\n", DEVICE_NAME);
+        return -ENOMEM;
+    }
+    pr_info("create the file in /sys/kernel/%s \n", DEVICE_NAME);
+
+
+	proc_create(DEVICE_NAME, 0, NULL, &dev_proc_fops);
+
+
+	pr_info("chrdev: module loaded\n");
+
 	return 0;
 }
 
 static void chrdev_exit(void)
 {
+	kobject_put(example_kobject);
+	remove_proc_entry(DEVICE_NAME, NULL);
+
 	device_destroy(pclass, MKDEV(major, 0));
 	class_destroy(pclass);
 	unregister_chrdev(major, DEVICE_NAME);
 
 	kfree(data_buffer);
+
 
 	pr_info("chrdev: module exited\n");
 }
