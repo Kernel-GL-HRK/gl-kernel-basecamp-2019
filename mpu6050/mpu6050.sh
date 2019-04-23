@@ -13,6 +13,8 @@ do
 
 	MAJOR=$(i2cget -y 0 0x68 0x41)
 	MINOR=$(i2cget -y 0 0x68 0x42)
+	
+	Temperature=$(( -(((MAJOR << 8)+ MINOR) ^ ((1 << 0x10) - 1)) ))
 	sleep 2
 	
 done
