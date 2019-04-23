@@ -31,6 +31,7 @@
 #define REG_PWR_MGMT_1		0x6B
 #define REG_PWR_MGMT_2		0x6C
 #define REG_WHO_AM_I		0x75
+#define MPU6050_ADDR        0x68
 
 // Define data values
 
@@ -40,6 +41,8 @@ struct mpu6050_i2c_data {
 };
 
 static struct mpu6050_i2c_data mpu6050_data;
+static struct class *attribute_class;
+
 
 static int mpu6050_read_data(void)
 {
@@ -68,8 +71,30 @@ static int mpu6050_read_data(void)
 
 static int mpu6050_probe(struct i2c_client *drv_client, const struct i2c_device_id *id)
 {
+    int err;
+    
     printk(KERN_INFO "mpu6050: Driver probe started\n");
-    printk(KERN_INFO "mpu6050: i2c address is 0x%X\n", drv_client->addr);
+    
+    err=i2c_smbus_read_byte_data(drv_client, REG_WHO_AM_I);
+    if(err != MPU6050_ADDR){
+            printk(KERN_ERR "Wrong i2c device address: expected 0x%X, found 0x%X\n", MPU6050_ADDR, err);
+		return -1;
+    }
+    else
+        printk(KERN_INFO "mpu6050: i2c address is 0x%X\n", drv_client->addr);
+    
+    i2c_smbus_write_byte_data(drv_client, REG_CONFIG, 0);
+	i2c_smbus_write_byte_data(drv_client, REG_GYRO_CONFIG, 0);
+	i2c_smbus_write_byte_data(drv_client, REG_ACCEL_CONFIG, 0);
+	i2c_smbus_write_byte_data(drv_client, REG_FIFO_EN, 0);
+	i2c_smbus_write_byte_data(drv_client, REG_INT_PIN_CFG, 0);
+	i2c_smbus_write_byte_data(drv_client, REG_INT_ENABLE, 0);
+	i2c_smbus_write_byte_data(drv_client, REG_USER_CTRL, 0);
+	i2c_smbus_write_byte_data(drv_client, REG_PWR_MGMT_1, 0);
+	i2c_smbus_write_byte_data(drv_client, REG_PWR_MGMT_2, 0);
+    
+    mpu6050_data.drv_client = drv_client;
+    
     printk(KERN_INFO "mpu6050: Driver probed\n");
     return 0;
 
@@ -77,7 +102,7 @@ static int mpu6050_probe(struct i2c_client *drv_client, const struct i2c_device_
 
 static int mpu6050_remove(struct i2c_client *drv_client)
 {
-
+    mpu6050_data.drv_client = 0;
     printk(KERN_INFO "mpu6050: i2c driver removed\n");
 
     return 0;
@@ -103,20 +128,94 @@ static struct i2c_driver mpu6050_driver = {
     .id_table = mpu6050_idtable,
 };
 
+// Accelerometer show functions
+
+// X axis
+
+static ssize_t accelerometer_x_show(struct class *class, struct class_attribute *attr, char *buf)
+{
+	mpu6050_read_data();
+
+	sprintf(buf, "%d\n", mpu6050_data.accelerometer_values[0]);
+	return strlen(buf);
+}
+
+static struct class_attribute class_attr_accelerometer_x = __ATTR(accelerometer_x, 0444, &accelerometer_x_show, NULL);
+
+// Y axis
+
+static ssize_t accelerometer_y_show(struct class *class, struct class_attribute *attr, char *buf)
+{
+	mpu6050_read_data();
+
+	sprintf(buf, "%d\n", mpu6050_data.accelerometer_values[1]);
+	return strlen(buf);
+}
+
+static struct class_attribute class_attr_accelerometer_y = __ATTR(accelerometer_y, 0444, &accelerometer_y_show, NULL);
+
+// Z axis
+
+static ssize_t accelerometer_z_show(struct class *class, struct class_attribute *attr, char *buf)
+{
+	mpu6050_read_data();
+
+	sprintf(buf, "%d\n", mpu6050_data.accelerometer_values[2]);
+	return strlen(buf);
+}
+
+static struct class_attribute class_attr_accelerometer_z = __ATTR(accelerometer_z, 0444, &accelerometer_z_show, NULL);
+
 // Init/exit functions
 
 static int mpu6050_init(void)
 {
     int ret;
-
+    
+    //Add driver
+    
     ret = i2c_add_driver(&mpu6050_driver);
-
     if (ret) {
     printk(KERN_ERR "mpu6050: Failed to add new i2c device: %d\n", ret);
     return ret;
     }
 
     printk(KERN_INFO "mpu6050: i2c driver created\n");
+    
+    // Sysfs class creation
+    
+    attribute_class = class_create(THIS_MODULE, "mpu6050");
+	if (IS_ERR(attribute_class)) {
+		pr_err("mpu6050: Failed to create sysfs class\n");
+		return -1;
+	}
+	
+	printk(KERN_INFO "mpu6050: Sysfs class created\n");
+    
+    // Accelerometer X interface creation
+    
+    ret = class_create_file(attribute_class, &class_attr_accelerometer_x);
+	if (ret) {
+		pr_err("mpu6050: Failed to create sysfs class attribute accelerometer_x\n");
+		return ret;
+	}
+    
+    // Accelerometer Y interface creation
+    
+    ret = class_create_file(attribute_class, &class_attr_accelerometer_y);
+	if (ret) {
+		pr_err("mpu6050: Failed to create sysfs class attribute accelerometer_y\n");
+		return ret;
+	}
+	
+	// Accelerometer Z interface creation
+    
+    ret = class_create_file(attribute_class, &class_attr_accelerometer_z);
+	if (ret) {
+		pr_err("mpu6050: Failed to create sysfs class attribute accelerometer_z\n");
+		return ret;
+	}
+    
 	printk(KERN_INFO "mpu6050: Module loaded\n");
 	return 0;
 }
@@ -124,7 +223,11 @@ static int mpu6050_init(void)
 static void mpu6050_exit(void)
 {
     i2c_del_driver(&mpu6050_driver);
-
+    
+    class_remove_file(attribute_class, &class_attr_accelerometer_x);
+    class_remove_file(attribute_class, &class_attr_accelerometer_y);
+    class_remove_file(attribute_class, &class_attr_accelerometer_z);
+    
     printk(KERN_INFO "mpu6050: i2c driver deleted\n");
 	printk(KERN_INFO "mpu6050: Module exited\n");
 }
