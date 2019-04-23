@@ -38,6 +38,7 @@
 struct mpu6050_i2c_data {
 	struct i2c_client *drv_client;
 	int accelerometer_values[3];
+    int gyroscope_values[3];
 };
 
 static struct mpu6050_i2c_data mpu6050_data;
@@ -58,12 +59,12 @@ static int mpu6050_read_data(void)
 	mpu6050_data.accelerometer_values[1] = (s16)((u16)i2c_smbus_read_word_swapped(drv_client, REG_ACCEL_YOUT_H));
 	mpu6050_data.accelerometer_values[2] = (s16)((u16)i2c_smbus_read_word_swapped(drv_client, REG_ACCEL_ZOUT_H));
 
-	dev_info(&drv_client->dev, "Sensor data read:\n");
-	dev_info(&drv_client->dev, "ACCEL[X,Y,Z] = [%d, %d, %d]\n",
-		mpu6050_data.accelerometer_values[0],
-		mpu6050_data.accelerometer_values[1],
-		mpu6050_data.accelerometer_values[2]);
-
+    // Gyroscope data reading
+    
+    mpu6050_data.gyroscope_values[0] = (s16)((u16)i2c_smbus_read_word_swapped(drv_client, REG_GYRO_XOUT_H));
+	mpu6050_data.gyroscope_values[1] = (s16)((u16)i2c_smbus_read_word_swapped(drv_client, REG_GYRO_YOUT_H));
+	mpu6050_data.gyroscope_values[2] = (s16)((u16)i2c_smbus_read_word_swapped(drv_client, REG_GYRO_ZOUT_H));
+    
 	return 0;
 }
 
@@ -166,6 +167,44 @@ static ssize_t accelerometer_z_show(struct class *class, struct class_attribute 
 
 static struct class_attribute class_attr_accelerometer_z = __ATTR(accelerometer_z, 0444, &accelerometer_z_show, NULL);
 
+// Gyroscope show functions
+
+// X axis
+
+static ssize_t gyroscope_x_show(struct class *class, struct class_attribute *attr, char *buf)
+{
+	mpu6050_read_data();
+
+	sprintf(buf, "%d\n", mpu6050_data.gyroscope_values[0]);
+	return strlen(buf);
+}
+
+static struct class_attribute class_attr_gyroscope_x = __ATTR(gyroscope_x, 0444, &gyroscope_x_show, NULL);
+
+// Y axis
+
+static ssize_t gyroscope_y_show(struct class *class, struct class_attribute *attr, char *buf)
+{
+	mpu6050_read_data();
+
+	sprintf(buf, "%d\n", mpu6050_data.gyroscope_values[1]);
+	return strlen(buf);
+}
+
+static struct class_attribute class_attr_gyroscope_y = __ATTR(gyroscope_y, 0444, &gyroscope_y_show, NULL);
+
+// Z axis
+
+static ssize_t gyroscope_z_show(struct class *class, struct class_attribute *attr, char *buf)
+{
+	mpu6050_read_data();
+
+	sprintf(buf, "%d\n", mpu6050_data.gyroscope_values[2]);
+	return strlen(buf);
+}
+
+static struct class_attribute class_attr_gyroscope_z = __ATTR(gyroscope_z, 0444, &gyroscope_z_show, NULL);
+
 // Init/exit functions
 
 static int mpu6050_init(void)
@@ -215,6 +254,30 @@ static int mpu6050_init(void)
 		pr_err("mpu6050: Failed to create sysfs class attribute accelerometer_z\n");
 		return ret;
 	}
+	
+	// Gyroscope X interface creation
+    
+    ret = class_create_file(attribute_class, &class_attr_gyroscope_x);
+	if (ret) {
+		pr_err("mpu6050: Failed to create sysfs class attribute gyroscope_x\n");
+		return ret;
+	}
+    
+    // Gyroscope Y interface creation
+    
+    ret = class_create_file(attribute_class, &class_attr_gyroscope_y);
+	if (ret) {
+		pr_err("mpu6050: Failed to create sysfs class attribute gyroscope_y\n");
+		return ret;
+	}
+	
+	// Gyroscope Z interface creation
+    
+    ret = class_create_file(attribute_class, &class_attr_gyroscope_z);
+	if (ret) {
+		pr_err("mpu6050: Failed to create sysfs class attribute gyroscope_z\n");
+		return ret;
+	}
     
 	printk(KERN_INFO "mpu6050: Module loaded\n");
 	return 0;
@@ -222,11 +285,17 @@ static int mpu6050_init(void)
 
 static void mpu6050_exit(void)
 {
-    i2c_del_driver(&mpu6050_driver);
-    
+   
     class_remove_file(attribute_class, &class_attr_accelerometer_x);
     class_remove_file(attribute_class, &class_attr_accelerometer_y);
     class_remove_file(attribute_class, &class_attr_accelerometer_z);
+    
+    class_remove_file(attribute_class, &class_attr_gyroscope_x);
+    class_remove_file(attribute_class, &class_attr_gyroscope_y);
+    class_remove_file(attribute_class, &class_attr_gyroscope_z);
+    
+    class_destroy(attribute_class);
+    i2c_del_driver(&mpu6050_driver);
     
     printk(KERN_INFO "mpu6050: i2c driver deleted\n");
 	printk(KERN_INFO "mpu6050: Module exited\n");
