@@ -1,0 +1,32 @@
+														Instruction
+
+For the lazy:
+1.Start script
+2.PROFIT
+
+For step-by-step testing:
+
+1.Start assembly your module by 
+make M ="Path/to/your/module/directory"
+2. Use command to load module into kernel 
+"insmod module_name.ko"
+You can choose buffer size for module by 
+"insmod module_name.ko B_size=your size" 
+....or dont write B_size=your size and buffer will be 1kB default.
+3.read content of buffer by command 
+cat /proc/module_name
+4.write something into buffer with command
+ echo  "something" > $/proc/module_name
+5.check non-empty buffer again by 
+cat /proc/module_name
+6.delete all from buffer by 
+echo 1 > /sys/kernel/your_path_to_file
+7.check buffer again by 
+cat /proc/module_name
+8. cat command can't show exact content of buffer, so use test prorgam from addition, but assemble it firstly:
+gcc testrw.c -o testread_dev
+Then execute
+/test_file_path/testread_dev
+9.remove module from kernel by
+rmmod module_name
+ 
