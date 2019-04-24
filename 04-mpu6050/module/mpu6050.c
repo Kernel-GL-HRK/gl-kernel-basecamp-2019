@@ -94,7 +94,9 @@ static int mpu6050_read_data(void)
 	temp = (s16)((u16)i2c_smbus_read_word_swapped(device_data.client, REG_TEMP_OUT_H));
 	device_data.temperature = ((((temp + 12420 + 170) * ONE_TEMP_POINT) / 340) * 9) / 5 + 32000;
 
-	pr_info("cpu6050: temperature = %d.%03d\n", device_data.temperature / ONE_TEMP_POINT, device_data.temperature % ONE_TEMP_POINT);
+	pr_info("mpu6050: temperature = %d.%03d\n",
+                device_data.temperature / ONE_TEMP_POINT,
+                device_data.temperature % ONE_TEMP_POINT);
 
 	return 0;
 
