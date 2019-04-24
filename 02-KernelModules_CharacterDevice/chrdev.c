@@ -13,9 +13,9 @@
 #endif
 
 #define BUFFER_SIZE	    1024 
-#define DEVICE_NAME 	"charDevice"
-#define CLASS_NAME	    "charClass"
-#define PROC_DIRECTORY 	"charDevice"
+#define DEVICE_NAME 	"char_device"
+#define CLASS_NAME	    "char_class"
+#define PROC_DIRECTORY 	"char_device"
 #define PROC_FILENAME 	"chrdev"
 
 int buffer_increase = 0;
@@ -181,7 +181,6 @@ static int __init chrdev_init(void){
 	printk(KERN_INFO "chrdev loading");
 	major = register_chrdev(0, DEVICE_NAME, &fops);
 	
-	major = register_chrdev(0, DEVICE_NAME, &fops);
 	if (major < 0) {
 		pr_err("register_chrdev failed: %d\n", major);
 		return major;
@@ -205,11 +204,24 @@ static int __init chrdev_init(void){
 	}
 	printk(KERN_INFO "chrdev: Device initialized succesfully\n");
 
-	if (0 == err) err = buffer_create();
-	if (0 == err) err = create_proc();
-	chd_kobject = kobject_create_and_add(MODULE_NAME, kernel_kobj);
-	if (0 == err) err = sysfs_create_file(chd_kobject, &sysfs_attribute.attr);
+	err = buffer_create();
+	if (IS_ERR(err)) {
+		class_destroy(pclass);
+		unregister_chrdev(major, DEVICE_NAME);
+		pr_err("chrdev: buffer_create failed\n");
+		return err;
+	}
+
+	err = create_proc();
+	if (IS_ERR(err)) {
+		class_destroy(pclass);
+		unregister_chrdev(major, DEVICE_NAME);
+		pr_err("chrdev: proc_create failed\n");
+		return err;
+	}
 	
+	chd_kobject = kobject_create_and_add(MODULE_NAME, kernel_kobj);
+	err = sysfs_create_file(chd_kobject, &sysfs_attribute.attr);
 	return err;
 }
 
@@ -230,3 +242,6 @@ module_init(chrdev_init);
 module_exit(chrdev_exit);
 
 MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Oleksandr Shmatko");
+MODULE_DESCRIPTION("Characters buffer driver module");
+MODULE_VERSION("0.1");
