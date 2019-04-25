@@ -101,6 +101,7 @@ static int mpu6050_probe(struct i2c_client *drv_client, const struct i2c_device_
 	else
 		printk(KERN_INFO "mpu6050: i2c address is 0x%X\n", drv_client->addr);
 
+
 	i2c_smbus_write_byte_data(drv_client, REG_CONFIG, 0);
 	i2c_smbus_write_byte_data(drv_client, REG_GYRO_CONFIG, 0);
 	i2c_smbus_write_byte_data(drv_client, REG_ACCEL_CONFIG, 0);
