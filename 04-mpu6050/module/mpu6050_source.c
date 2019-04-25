@@ -35,8 +35,7 @@
 
 // Define byteshift parameters
 
-#define SHIFT               	8
-#define SHIFT_MASK          	((1 << SHIFT) - 1)
+#define ACCURACY        	1000
 
 // Define data values
 
@@ -74,14 +73,14 @@ static int mpu6050_read_data(void)
 
 	// Temperature value reading
 
-	raw_temp_data = (((s16)((u16)i2c_smbus_read_word_swapped(drv_client, REG_TEMP_OUT_H)) << SHIFT) | ((u16)i2c_smbus_read_word_swapped(drv_client, REG_TEMP_OUT_L)));
+	raw_temp_data = (s16)((u16)i2c_smbus_read_word_swapped(drv_client, REG_TEMP_OUT_H));
 
 	// Temperature transform to Fahrenheit scale
 
-	raw_temp_data = (((raw_temp_data/340) + (3653 << SHIFT)/100) * 18)/10 + (32 << SHIFT);
+	raw_temp_data = (((raw_temp_data + 12420 + 170) * ACCURACY / 340) * 18) / 10 + 32 * ACCURACY;
 
-	mpu6050_data.temperature_values[0] = raw_temp_data >> SHIFT;
-	mpu6050_data.temperature_values[1] = raw_temp_data & SHIFT_MASK;
+	mpu6050_data.temperature_values[0] = raw_temp_data / ACCURACY;
+	mpu6050_data.temperature_values[1] = raw_temp_data % ACCURACY;
 
 	return 0;
 }
@@ -230,7 +229,7 @@ static ssize_t temperature_show(struct class *class, struct class_attribute *att
 {
 	mpu6050_read_data();
 	
-	sprintf(buf, "%d.%d\n", mpu6050_data.temperature_values[0], mpu6050_data.temperature_values[1]);
+	sprintf(buf, "%d.%03d\n", mpu6050_data.temperature_values[0], mpu6050_data.temperature_values[1]);
 	return strlen(buf);
 }
 

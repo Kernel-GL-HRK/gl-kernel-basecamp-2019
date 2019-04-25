@@ -15,7 +15,7 @@ do
 
 	temperature=$(( -(((tempHexH << 8) + tempHexL) ^ ((1 << 0x10) - 1)) ))
 	
-	fahrenheit=`bc -l <<< "scale=3; ($temperature/340 + 36.53)" * 1.8 + 32"`
+	fahrenheit=`bc -l <<< "scale=3; ($temperature/340 + 36.53) * 1.8 + 32"`
     
 	echo "Fahrenheit: $fahrenheit"
 	
