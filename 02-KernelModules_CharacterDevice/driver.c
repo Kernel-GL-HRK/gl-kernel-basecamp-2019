@@ -41,6 +41,25 @@ static int major;
 
 int error;
 
+static struct proc_dir_entry *proc_file;
+
+/*
+ * proc interface
+ */
+
+static ssize_t proc_read (struct file *filep, char *buffer, size_t len, loff_t *offset) 
+{	
+  printk("chrdev: size of buffer: %d\n", BUFFER_SIZE);
+  printk("chrdev: free: %d\n", (BUFFER_SIZE - data_size));
+  return 0;
+}
+
+static struct file_operations proc_file_fops = {
+	.owner = THIS_MODULE,
+	.read = proc_read
+};
+
+
 /*
  * dev interface
  */
@@ -113,15 +132,18 @@ struct file_operations fops = {
 };
 
 
+/*
+ * Инициализация и завершение модуля
+ */
+
 static int __init device_init( void ) 
 {
     is_open = 0;
 	data_size = 0;
 	error = 0;	
 	
-	if(BUFFER_SIZE < 1024) {
+	if(BUFFER_SIZE < 1024) 
 		BUFFER_SIZE = 1024;
-	}
 	
 	data_buffer = kzalloc(BUFFER_SIZE * sizeof(*data_buffer), GFP_KERNEL);
 
@@ -149,17 +171,19 @@ static int __init device_init( void )
 	}
 	
 	pr_info("chrdev: device node created successfully\n");
-	
+
+	proc_file = proc_create(DEVICE_NAME, 0666, NULL, &proc_file_fops);
+	    
 	pr_info("chrdev: module loaded\n");
 	return 0;
 }
 
-static void __exit device_exit( void ) 
-{
+static void __exit device_exit( void ) {
 	kfree(data_buffer);
 	device_destroy(pclass, MKDEV(major, 0));
 	class_destroy(pclass);
 	unregister_chrdev(major, DEVICE_NAME);		
+	remove_proc_entry(DEVICE_NAME, NULL);	
 	pr_info("chrdev: module exited\n");
 }
 
