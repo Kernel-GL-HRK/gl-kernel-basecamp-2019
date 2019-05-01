@@ -1,0 +1,37 @@
+You can run a script.sh to check the driver
+
+How does the script work step by step:
+
+1) Module loading without parameters;
+
+2) Displaying buffer size;
+
+3) Writing "Hello, dev" to character device via /dev interface;
+
+4) Displaying buffer size;
+
+5) Reading from character device via /dev interface;
+
+6) Displaying buffer size;
+
+7) Module unloading;
+
+8) Module loading with BUFFER_SIZE=1500";
+
+9) Displaying buffer size;
+
+10) Module unloading;
+
+11) Module loading without parameters;
+
+12) Writing "Hello, dev" to character device via /dev interface;
+
+13) Displaying buffer size;
+
+14) Cleaning buffer via /sysfs interface;
+
+15) Displaying buffer size;
+
+16) Module unloading;
+
+
