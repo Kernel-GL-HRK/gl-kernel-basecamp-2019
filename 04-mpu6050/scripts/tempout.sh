@@ -20,4 +20,14 @@ do
 	then
 		RES=$(( -(0x10000 - RES) ))
 	fi
+
+	RES_CELCIUM=$(echo "scale=3; $RES / 340.000 + 36.53" | bc)
+
+	printf "Celcium:\t%.3f\n" "$RES_CELCIUM"
+
+	RES_FAHRENHEIT=$(echo "scale=3; ($RES_CELCIUM * 9.0 / 5.0) + 32.0" | bc)
+
+	printf "Fahrenheit:\t%.3f\n\n" "$RES_FAHRENHEIT"
+
+	sleep 1
 done
