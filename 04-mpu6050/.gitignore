@@ -1,0 +1,10 @@
+
+./.doc
+*.order
+.tmp*
+*.cmd
+*.symvers
+*.mod.*
+*.o
+*.ko
+
