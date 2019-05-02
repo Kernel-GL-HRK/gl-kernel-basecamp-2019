@@ -317,3 +317,5 @@ MODULE_AUTHOR("Andriy.Khulap <andriy.khulap@globallogic.com>");
 MODULE_DESCRIPTION("mpu6050 I2C acc&gyro");
 MODULE_LICENSE("GPL");
 MODULE_VERSION("0.1");
+
+

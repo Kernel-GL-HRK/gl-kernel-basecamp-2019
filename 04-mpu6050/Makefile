@@ -2,6 +2,10 @@
 # mpu6050 accelerometer & gyroscope
 #
 
+export CROSS_COMPILE=/usr/bin/arm-linux-gnueabihf-
+export KERNELDIR=/home/alex/build/cache/sources/linux-mainline/orange-pi-4.19
+PWD := $(shell pwd)
+
 ifneq ($(KERNELRELEASE),)
 
 obj-m := mpu6050.o
@@ -15,19 +19,14 @@ ifeq ($(BBB_KERNEL),)
 endif
 endif
 
-KERNELDIR ?= $(BBB_KERNEL)
+#KERNELDIR ?= $(BBB_KERNEL)
 
-export ARCH = arm
-export CROSS_COMPILE ?= arm-linux-gnueabihf-
-
-
-.PHONY: all clean
 
 all:
-	$(MAKE) -C $(KERNELDIR) M=$(CURDIR) modules
+	$(MAKE) ARCH=arm CROSS_COMPILE=$(CROSS_COMPILE) -C $(KERNELDIR) M=$(PWD) modules
 
 clean:
-	$(MAKE) -C $(KERNELDIR) M=$(CURDIR) clean
+	$(MAKE) ARCH=arm CROSS_COMPILE=$(CROSS_COMPILE) -C $(KERNELDIR) M=$(PWD) clean
 
 
 endif

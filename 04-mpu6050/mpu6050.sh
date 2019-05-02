@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-i2cset -y 0 0x68 0x6b 0
+i2cset -y 1 0x68 0x6b 0
 
 while :
 do
