@@ -176,7 +176,7 @@ static ssize_t gyro_z_show(struct class *class,
 	return strlen(buf);
 }
 
-static ssize_t temp_show(struct class *class,
+static ssize_t temp_cels_show(struct class *class,
 			 struct class_attribute *attr, char *buf)
 {
 	mpu6050_read_data();
@@ -185,13 +185,28 @@ static ssize_t temp_show(struct class *class,
 	return strlen(buf);
 }
 
-CLASS_ATTR(accel_x, 0444, &accel_x_show, NULL);
-CLASS_ATTR(accel_y, 0444, &accel_y_show, NULL);
-CLASS_ATTR(accel_z, 0444, &accel_z_show, NULL);
-CLASS_ATTR(gyro_x, 0444, &gyro_x_show, NULL);
-CLASS_ATTR(gyro_y, 0444, &gyro_y_show, NULL);
-CLASS_ATTR(gyro_z, 0444, &gyro_z_show, NULL);
-CLASS_ATTR(temperature, 0444, &temp_show, NULL);
+
+static ssize_t temp_far_show(struct class *class,
+			 struct class_attribute *attr, char *buf)
+{
+	int far;
+	mpu6050_read_data();
+	far = g_mpu6050_data.temperature * 9 * 1000 / 5 + 32;
+	sprintf(buf, "%d.%d\n", far/1000, far%1000);
+	return strlen(buf);
+}
+
+
+
+static struct class_attribute class_attr_accel_x = __ATTR(accel_x, 0444, accel_x_show, NULL);
+static struct class_attribute class_attr_accel_y = __ATTR(accel_y, 0444, accel_y_show, NULL);
+static struct class_attribute class_attr_accel_z = __ATTR(accel_z, 0444, accel_z_show, NULL);
+static struct class_attribute class_attr_gyro_x = __ATTR(gyro_x, 0444, gyro_x_show, NULL);
+static struct class_attribute class_attr_gyro_y = __ATTR(gyro_y, 0444, gyro_y_show, NULL);
+static struct class_attribute class_attr_gyro_z = __ATTR(gyro_z, 0444, gyro_z_show, NULL);
+static struct class_attribute class_attr_temp_c = __ATTR(temp_c, 0444, temp_cels_show, NULL);
+static struct class_attribute class_attr_temp_f = __ATTR(temp_f, 0444, temp_far_show, NULL);
+
 
 static struct class *attr_class;
 
@@ -253,11 +268,18 @@ static int mpu6050_init(void)
 		return ret;
 	}
 	/* Create temperature */
-	ret = class_create_file(attr_class, &class_attr_temperature);
+	ret = class_create_file(attr_class, &class_attr_temp_c);
 	if (ret) {
 		pr_err("mpu6050: failed to create sysfs class attribute temperature: %d\n", ret);
 		return ret;
 	}
+
+	ret = class_create_file(attr_class, &class_attr_temp_f);
+	if (ret) {
+		pr_err("mpu6050: failed to create sysfs class attribute temperature: %d\n", ret);
+		return ret;
+	}
+
 
 	pr_info("mpu6050: sysfs class attributes created\n");
 
@@ -274,7 +296,8 @@ static void mpu6050_exit(void)
 		class_remove_file(attr_class, &class_attr_gyro_x);
 		class_remove_file(attr_class, &class_attr_gyro_y);
 		class_remove_file(attr_class, &class_attr_gyro_z);
-		class_remove_file(attr_class, &class_attr_temperature);
+		class_remove_file(attr_class, &class_attr_temp_c);
+		class_remove_file(attr_class, &class_attr_temp_f);
 		pr_info("mpu6050: sysfs class attributes removed\n");
 
 		class_destroy(attr_class);
