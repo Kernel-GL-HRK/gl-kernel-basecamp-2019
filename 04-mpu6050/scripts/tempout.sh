@@ -12,5 +12,12 @@ do
 	RES_H=$(i2cget -y 0 0x68 $TEMP_OUT_H)
 	RES_L=$(i2cget -y 0 0x68 $TEMP_OUT_L)
 
+	SIGN_BIT=$(( $RES_H >> 7 ))
+
 	RES=$((RES_H << 8 | RES_L))
+
+	if [ $SIGN_BIT == 1 ]
+	then
+		RES=$(( -(0x10000 - RES) ))
+	fi
 done
