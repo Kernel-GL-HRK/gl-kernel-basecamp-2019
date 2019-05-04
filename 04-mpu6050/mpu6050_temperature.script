@@ -1,6 +1,24 @@
 #! /bin/bash
 
-if ! i2cset -y 0 0x68 0x6b 0 ; then
-	echo "Error!"
+if [ ! i2cset -y 1 0x68 0x6b 0 ] ; then
+	echo Error!\n
 	exit
 fi
+
+while :
+do
+	HIWORD=$(i2cget -y 1 0x68 0x41)
+	LOWORD=$(i2cget -y 1 0x68 0x42)
+
+	SIGN=$(( (HIWORD & 0x80) >> 7 ))
+	TEMPERATURE=$(( (HIWORD << 8) + LOW ))
+
+	if [ $SIGN -eq 1 ] ; then
+		TEMPERATURE=$(( -(0x10000 - TEMPERATURE) ))
+	fi
+
+	printf "Fahrenheit: "
+	bc -l <<< "scale=3; ($TEMPERATURE/340 + 36.53) * 1.8 + 32"
+	prontf "\n\n"
+	sleep 1
+done
