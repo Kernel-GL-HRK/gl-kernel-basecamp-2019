@@ -26,4 +26,9 @@ do
         TEMP_COMB=$(( -(0x10000 - TEMP_COMB) ))
     fi
 
+    RES=$(echo "scale=3; ($TEMP_COMB/340 + 36.53)* 1.8 + 32" | bc)
+    printf "Fahrenheit: %s\n\n" "$RES"
+
+    sleep 2
+
 done
