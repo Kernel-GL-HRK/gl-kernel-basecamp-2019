@@ -19,5 +19,11 @@ do
     RAW_L=$(i2cget -y 1 0x68 $TEMP_OUT_L)
 
     SIGN=$(( (RAW_H & 0x80) >> 7 ))
-    TEMP_COMB=$(((RAW_H << 8) + RAW_L))
+    TEMP_COMB=$(( (RAW_H << 8) + RAW_L ))
+
+    if [ $SIGN -eq 1 ]
+    then
+        TEMP_COMB=$(( -(0x10000 - TEMP_COMB) ))
+    fi
+
 done
