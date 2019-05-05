@@ -18,3 +18,8 @@ else  printf 'Device answer is OK and = %#x\n' $tmp
 fi
 
 sleep 0.2
+
+#Set device online
+i2cset -y 1 $MPU6050 $Power 0
+
+sleep 0.2
