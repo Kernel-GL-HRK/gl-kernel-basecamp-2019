@@ -17,4 +17,7 @@ while :
 do
     RAW_H=$(i2cget -y 1 0x68 $TEMP_OUT_H)
     RAW_L=$(i2cget -y 1 0x68 $TEMP_OUT_L)
+
+    SIGN=$(( (RAW_H & 0x80) >> 7 ))
+    TEMP_COMB=$(((RAW_H << 8) + RAW_L))
 done
