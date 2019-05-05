@@ -12,3 +12,9 @@ else
     echo "Error\n"
     exit
 fi 
+
+while :
+do
+    RAW_H=$(i2cget -y 1 0x68 $TEMP_OUT_H)
+    RAW_L=$(i2cget -y 1 0x68 $TEMP_OUT_L)
+done
