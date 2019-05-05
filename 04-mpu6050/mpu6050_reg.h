@@ -27,8 +27,17 @@
 #define REG_WHO_AM_I          0x75
 
 #define MPU6050_WHO_AM_I      0x68
+#define ACCEL_X accel_x
+#define ACCEL_Y accel_y
+#define ACCEL_Z accel_z
 
+#define GYRO_X gyro_x
+#define GYRO_Y gyro_y
+#define GYRO_Z gyro_z
+
+#define TEMP Temperature
+
+#define NAME_SYSCLASS "Mpu6050"
 #endif
-
 
 
