@@ -1,8 +1,3 @@
-/*
- * Шаблон для разработки драйвера символьного устройства
- * driver.c -- very simple chrdev driver
- */
-
 #include <linux/module.h>
 #include <linux/moduleparam.h>  /* command-line args */
 #include <linux/init.h>
@@ -51,25 +46,24 @@ static struct proc_dir_entry *proc_file;
 
 static ssize_t sys_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
 {
-	if(data_size > 0){
+	if (data_size > 0) {
 		printk("will be freed: %d\n", data_size);
 		memset(data_buffer, 0, data_size);
-		data_size = 0;		
+		data_size = 0;
+	} else {
+		pr_info("buffer is empty");
 	}
-	else {		
-		pr_info("buffer is empty \n");
-	}
-    return count;
+	return count;
 }
 
-static struct kobj_attribute sys_attribute =__ATTR(foo, 0666, NULL, sys_store);
-
+static struct kobj_attribute sys_attribute = __ATTR(foo, 0666, NULL, sys_store);
 
 /*
  * proc interface
  */
 
-static ssize_t proc_read (struct file *filep, char *buffer, size_t len, loff_t *offset) {	
+static ssize_t proc_read(struct file *filep, char *buffer, size_t len, loff_t *offset)
+{
 	printk("chrdev: size of buffer: %d\n", BUFFER_SIZE);
 	printk("chrdev: free: %d\n", (BUFFER_SIZE - data_size));
 	return 0;
@@ -107,10 +101,10 @@ static int dev_release(struct inode *inodep, struct file *filep)
 static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *offset)
 {
 	int ret;
-	
+
 	pr_info("chrdev: read from file %s\n", filep->f_path.dentry->d_iname);
 
-	if (len > data_size) 
+	if (len > data_size)
 		len = data_size;
 
 	ret = copy_to_user(buffer, data_buffer, len);
@@ -127,11 +121,11 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
 static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, loff_t *offset)
 {
 	int ret;
-		
+
 	pr_info("chrdev: write to file %s\n", filep->f_path.dentry->d_iname);
 
 	data_size = len;
-	if (data_size > BUFFER_SIZE) 
+	if (data_size > BUFFER_SIZE)
 		data_size = BUFFER_SIZE;
 
 	ret = copy_from_user(data_buffer, buffer, data_size);
@@ -153,15 +147,15 @@ struct file_operations fops = {
 };
 
 
-static int __init device_init( void ) 
+static int __init device_init(void)
 {
-    is_open = 0;
+	is_open = 0;
 	data_size = 0;
-	error = 0;	
-	
-	if(BUFFER_SIZE < 1024)
+	error = 0;
+
+	if (BUFFER_SIZE < 1024)
 		BUFFER_SIZE = 1024;
-		
+
 	data_buffer = kzalloc(BUFFER_SIZE * sizeof(*data_buffer), GFP_KERNEL);
 
 	major = register_chrdev(0, DEVICE_NAME, &fops);
@@ -186,40 +180,44 @@ static int __init device_init( void )
 		pr_err("chrdev: device_create failed\n");
 		return PTR_ERR(pdev);
 	}
-	
+
 	pr_info("chrdev: device node created successfully\n");
 
 	proc_file = proc_create(DEVICE_NAME, 0666, NULL, &proc_file_fops);
-	
+
 	example_kobject = kobject_create_and_add(DEVICE_NAME, kernel_kobj);
-	if(!example_kobject)
-    	return -ENOMEM;
-	
+	if (!example_kobject)
+		return -ENOMEM;
+
 	error = sysfs_create_file(example_kobject, &sys_attribute.attr);
-	
-    if (error)
-    	pr_debug("failed to create the foo file in /sys/kernel/ \n");
-    	
+
+	if (error)
+		pr_debug("failed to create the foo file in /sys/kernel/ \n");
+
 	pr_info("chrdev: module loaded\n");
 	return 0;
 }
 
-static void __exit device_exit( void ) {
+static void __exit device_exit(void)
+{
 	kfree(data_buffer);
 	device_destroy(pclass, MKDEV(major, 0));
 	class_destroy(pclass);
-	unregister_chrdev(major, DEVICE_NAME);	
-	
+
+	unregister_chrdev(major, DEVICE_NAME);
+
 	remove_proc_entry(DEVICE_NAME, NULL);
 	kobject_put(example_kobject);
-	
+
 	pr_info("chrdev: module exited\n");
 }
 
 
-module_init( device_init );
-module_exit( device_exit );
+module_init(device_init);
+module_exit(device_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR ("Ihor Ryzhov <ihor.ryzhov@nure.ua>");
+MODULE_DESCRIPTION("Character device driver");
+MODULE_VERSION("0.1");
 
