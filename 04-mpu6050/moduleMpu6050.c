@@ -83,13 +83,13 @@ static ssize_t temperature_show(struct class *class, struct class_attribute *att
     result = h << 8 | l;
     result = result - SIXTEEN;
     result = result*DISCHARGE/340 + 12420*DISCHARGE/340;
-    mpu6050_data.temperatureC[0] = result / DISCHARGE;
-    mpu6050_data.temperatureC[1] = result % DISCHARGE;
-    mpu6050_data.temperatureF[0] = ((result*9/5)+32*DISCHARGE)/DISCHARGE;
-    mpu6050_data.temperatureF[1] = ((result*9/5)+32*DISCHARGE) % DISCHARGE;
-    printk(KERN_INFO  "Temperature: %d.%03d C\n", mpu6050_data.temperatureC[0], mpu6050_data.temperatureC[1]);
-    printk(KERN_INFO  "Temperature: %d.%03d F\n", mpu6050_data.temperatureF[0], mpu6050_data.temperatureF[1]);
-    sprintf(buf,"Temperature: %d.%03d C\nTemperature: %d.%03d F\n", mpu6050_data.temperatureC[0], mpu6050_data.temperatureC[1], mpu6050_data.temperatureF[0], mpu6050_data.temperatureF[1]);
+    gl_mpu6050_data.temperatureC[0] = result / DISCHARGE;
+    gl_mpu6050_data.temperatureC[1] = result % DISCHARGE;
+    gl_mpu6050_data.temperatureF[0] = ((result*9/5)+32*DISCHARGE)/DISCHARGE;
+    gl_mpu6050_data.temperatureF[1] = ((result*9/5)+32*DISCHARGE) % DISCHARGE;
+    printk(KERN_INFO  "Temperature: %d.%03d C\n", gl_mpu6050_data.temperatureC[0], gl_mpu6050_data.temperatureC[1]);
+    printk(KERN_INFO  "Temperature: %d.%03d F\n", gl_mpu6050_data.temperatureF[0], gl_mpu6050_data.temperatureF[1]);
+    sprintf(buf,"Temperature: %d.%03d C\nTemperature: %d.%03d F\n", gl_mpu6050_data.temperatureC[0], gl_mpu6050_data.temperatureC[1], gl_mpu6050_data.temperatureF[0], gl_mpu6050_data.temperatureF[1]);
     return strlen(buf);
 }
 
