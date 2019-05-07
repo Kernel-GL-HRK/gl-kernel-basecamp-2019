@@ -15,25 +15,27 @@
 #include <linux/err.h>
 #include <linux/i2c.h>
 #include <linux/i2c-dev.h>
+#define DISCHARGE 1000
+#define SIXTEEN 65536
 
+
+struct mpu6050_data {
+    struct i2c_client *drv_client;
+    int accel_values[3];
+    int gyro_values[3];
+    int temperature;
+};
+
+static struct mpu6050_data gl_mpu6050_data;
 static struct class *class_device;
 
-static ssize_t accel_x_show(struct class *class,
-                            struct class_attribute *attr, char *buf);
-static ssize_t accel_y_show(struct class *class,
-                            struct class_attribute *attr, char *buf);
-static ssize_t accel_z_show(struct class *class,
-                            struct class_attribute *attr, char *buf);
-static ssize_t gyro_x_show(struct class *class,
-                           struct class_attribute *attr, char *buf);
-static ssize_t gyro_y_show(struct class *class,
-                           struct class_attribute *attr, char *buf);
-static ssize_t gyro_z_show(struct class *class,
-                           struct class_attribute *attr, char *buf);
-static ssize_t temperature_show(struct class *class,
-                           struct class_attribute *attr, char *buf);
-
-
+static ssize_t accel_x_show(struct class *class, struct class_attribute *attr, char *buf);
+static ssize_t accel_y_show(struct class *class, struct class_attribute *attr, char *buf);
+static ssize_t accel_z_show(struct class *class, struct class_attribute *attr, char *buf);
+static ssize_t gyro_x_show(struct class *class, struct class_attribute *attr, char *buf);
+static ssize_t gyro_y_show(struct class *class, struct class_attribute *attr, char *buf);
+static ssize_t gyro_z_show(struct class *class, struct class_attribute *attr, char *buf);
+static ssize_t temperature_show(struct class *class, struct class_attribute *attr, char *buf);
 
 struct class_attribute accel_x_attr = __ATTR(ACCEL_X, 0444, &accel_x_show, NULL);
 struct class_attribute accel_y_attr = __ATTR(ACCEL_Y, 0444, &accel_y_show, NULL);
@@ -71,18 +73,22 @@ static ssize_t gyro_z_show(struct class *class, struct class_attribute *attr, ch
 }
 static ssize_t temperature_show(struct class *class, struct class_attribute *attr, char *buf)
 {
+    uint8_t h;
+    uint8_t l;
+    int result;
+    printk(KERN_INFO "Show_Temperature\n");
+    h = i2c_smbus_read_byte_data(gl_mpu6050_data.drv_client, REG_TEMP_OUT_H);
+    l = i2c_smbus_read_byte_data(gl_mpu6050_data.drv_client, REG_TEMP_OUT_L);
+    result = h << 8 | l;
+    result = result - SIXTEEN;
+    result = result*DISCHARGE/340 + 12420*DISCHARGE/340;
+    printk(KERN_INFO  "Temperature: %d.%03d C\n", result / DISCHARGE, result % DISCHARGE);
+    printk(KERN_INFO  "Temperature: %d.%03d F\n", ((result*9/5)+32*DISCHARGE)/DISCHARGE, ((result*9/5)+32*DISCHARGE) % DISCHARGE);
     return 0;
 }
 
 
-struct mpu6050_data {
-    struct i2c_client *drv_client;
-    int accel_values[3];
-    int gyro_values[3];
-    int temperature;
-};
 
-static struct mpu6050_data gl_mpu6050_data;
 
 static int mpu6050_probe(struct i2c_client *drv_client, const struct i2c_device_id *id)
 {
