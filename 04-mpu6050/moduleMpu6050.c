@@ -23,7 +23,8 @@ struct mpu6050_data {
     struct i2c_client *drv_client;
     int accel_values[3];
     int gyro_values[3];
-    int temperature;
+    int temperatureC[2];
+    int temperatureF[2];
 };
 
 static struct mpu6050_data gl_mpu6050_data;
@@ -82,9 +83,14 @@ static ssize_t temperature_show(struct class *class, struct class_attribute *att
     result = h << 8 | l;
     result = result - SIXTEEN;
     result = result*DISCHARGE/340 + 12420*DISCHARGE/340;
-    printk(KERN_INFO  "Temperature: %d.%03d C\n", result / DISCHARGE, result % DISCHARGE);
-    printk(KERN_INFO  "Temperature: %d.%03d F\n", ((result*9/5)+32*DISCHARGE)/DISCHARGE, ((result*9/5)+32*DISCHARGE) % DISCHARGE);
-    return 0;
+    mpu6050_data.temperatureC[0] = result / DISCHARGE;
+    mpu6050_data.temperatureC[1] = result % DISCHARGE;
+    mpu6050_data.temperatureF[0] = ((result*9/5)+32*DISCHARGE)/DISCHARGE;
+    mpu6050_data.temperatureF[1] = ((result*9/5)+32*DISCHARGE) % DISCHARGE;
+    printk(KERN_INFO  "Temperature: %d.%03d C\n", mpu6050_data.temperatureC[0], mpu6050_data.temperatureC[1]);
+    printk(KERN_INFO  "Temperature: %d.%03d F\n", mpu6050_data.temperatureF[0], mpu6050_data.temperatureF[1]);
+    sprintf(buf,"Temperature: %d.%03d C\nTemperature: %d.%03d F\n", mpu6050_data.temperatureC[0], mpu6050_data.temperatureC[1], mpu6050_data.temperatureF[0], mpu6050_data.temperatureF[1]);
+    return strlen(buf);
 }
 
 
