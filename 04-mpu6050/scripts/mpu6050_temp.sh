@@ -5,6 +5,8 @@ set -x #enable debug mode
 MPU6050_ADDR="0x68"
 WHO_AM_I_REG="0x75"
 WAKE_UP_REG="0x6b"
+TEMP_H="0x41"
+TEMP_L="0x42"
 
 if i2cdetect -y 0 | grep 68
     then
@@ -19,4 +21,10 @@ echo "Value WHO_AM_I registr in mpu6050 : $who_am_i"
 
 echo "Wake up MPU6050"
 $(i2cset -y 0 $MPU6050_ADDR $WAKE_UP_REG 0)
+
+while [ true ]
+do
+    temp_h=$(i2cget -y 0 $MPU6050_ADDR $TEMP_H)
+    temp_l$(i2cget -y 0 $MPU6050_ADDR $TEMP_L)
+done
 
