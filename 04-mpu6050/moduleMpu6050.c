@@ -50,15 +50,43 @@ struct class_attribute temperature_attr = __ATTR(TEMP, 0444, &temperature_show, 
 
 static ssize_t accel_x_show(struct class *class, struct class_attribute *attr, char *buf)
 {
-    return 0;
+    uint8_t h;
+    uint8_t l;
+    uint16_t t;
+    h = i2c_smbus_read_byte_data(gl_mpu6050_data.drv_client, REG_ACCEL_XOUT_H);
+    l = i2c_smbus_read_byte_data(gl_mpu6050_data.drv_client, REG_ACCEL_XOUT_L);
+    t = (h << 8 | l);
+    gl_mpu6050_data.accel_values[0] = (t & 0x7fff) - (t & 0x8000);
+    printk(KERN_INFO  "Accel_X: [%d]\n", gl_mpu6050_data.accel_values[0]);
+    sprintf(buf, "Accel_X: [%d]\n", gl_mpu6050_data.accel_values[0]);
+    return strlen(buf);
 }
 static ssize_t accel_y_show(struct class *class, struct class_attribute *attr, char *buf)
 {
-    return 0;
+    uint8_t h;
+    uint8_t l;
+    uint16_t t;
+    h = i2c_smbus_read_byte_data(gl_mpu6050_data.drv_client, REG_ACCEL_YOUT_H);
+    l = i2c_smbus_read_byte_data(gl_mpu6050_data.drv_client, REG_ACCEL_YOUT_L);
+    t = (h << 8 | l);
+    gl_mpu6050_data.accel_values[1] = (t & 0x7fff) - (t & 0x8000);
+    printk(KERN_INFO  "Accel_Y: [%d]\n", gl_mpu6050_data.accel_values[1]);
+    sprintf(buf, "Accel_Y: [%d]\n", gl_mpu6050_data.accel_values[1]);
+    return strlen(buf);
 }
 static ssize_t accel_z_show(struct class *class, struct class_attribute *attr, char *buf)
 {
-    return 0;
+    uint8_t h;
+    uint8_t l;
+    uint16_t t;
+    h = i2c_smbus_read_byte_data(gl_mpu6050_data.drv_client, REG_ACCEL_ZOUT_H);
+    l = i2c_smbus_read_byte_data(gl_mpu6050_data.drv_client, REG_ACCEL_ZOUT_L);
+    t = (h << 8 | l);
+    gl_mpu6050_data.accel_values[2] = (t & 0x7fff) - (t & 0x8000);
+    printk(KERN_INFO  "Accel_Z: [%d]\n", gl_mpu6050_data.accel_values[2]);
+    sprintf(buf, "Accel_Z: [%d]\n", gl_mpu6050_data.accel_values[2]);
+    return strlen(buf);
+
 }
 static ssize_t gyro_x_show(struct class *class, struct class_attribute *attr, char *buf)
 {
@@ -76,12 +104,13 @@ static ssize_t temperature_show(struct class *class, struct class_attribute *att
 {
     uint8_t h;
     uint8_t l;
+    uint16_t t;
     int result;
     printk(KERN_INFO "Show_Temperature\n");
     h = i2c_smbus_read_byte_data(gl_mpu6050_data.drv_client, REG_TEMP_OUT_H);
     l = i2c_smbus_read_byte_data(gl_mpu6050_data.drv_client, REG_TEMP_OUT_L);
-    result = h << 8 | l;
-    result = result - SIXTEEN;
+    t = (h << 8 | l);
+    result = ((t & 0x7fff) - (t & 0x8000));
     result = result*DISCHARGE/340 + 12420*DISCHARGE/340;
     gl_mpu6050_data.temperatureC[0] = result / DISCHARGE;
     gl_mpu6050_data.temperatureC[1] = result % DISCHARGE;
