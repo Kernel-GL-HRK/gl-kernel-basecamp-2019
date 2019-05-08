@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -x #enable debug mode
-
 MPU6050_ADDR="0x68"
 WHO_AM_I_REG="0x75"
 WAKE_UP_REG="0x6b"
@@ -26,7 +24,7 @@ while [ true ]
 do
     temp_h=$(i2cget -y 0 $MPU6050_ADDR $TEMP_H)
     temp_l=$(i2cget -y 0 $MPU6050_ADDR $TEMP_L)
-    
+
     temp_adc_unsig=$((($temp_h << 8)+ $temp_l))
     temp_sig=$(((temp_adc_unsig & 0x7fff)- (temp_adc_unsig & 0x8000)))
     echo "Value ADC: $temp_sig"
@@ -34,6 +32,9 @@ do
     temp_c=$(echo " scale = 2; $temp_sig / 340 + 36.53" | bc)
     echo "Value temperature in Celsius: $temp_c"
 
+    temp_f=$(echo " scale = 2; (9/5 * $temp_c) + 32" | bc)
+    echo "Value temperature in Fahrenheit: $temp_f"
+    echo ""
     sleep 1
 done
 
