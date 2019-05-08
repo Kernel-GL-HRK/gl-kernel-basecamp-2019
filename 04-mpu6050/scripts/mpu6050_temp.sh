@@ -25,6 +25,15 @@ $(i2cset -y 0 $MPU6050_ADDR $WAKE_UP_REG 0)
 while [ true ]
 do
     temp_h=$(i2cget -y 0 $MPU6050_ADDR $TEMP_H)
-    temp_l$(i2cget -y 0 $MPU6050_ADDR $TEMP_L)
+    temp_l=$(i2cget -y 0 $MPU6050_ADDR $TEMP_L)
+    
+    temp_adc_unsig=$((($temp_h << 8)+ $temp_l))
+    temp_sig=$(((temp_adc_unsig & 0x7fff)- (temp_adc_unsig & 0x8000)))
+    echo "Value ADC: $temp_sig"
+
+    temp_c=$(echo " scale = 2; $temp_sig / 340 + 36.53" | bc)
+    echo "Value temperature in Celsius: $temp_c"
+
+    sleep 1
 done
 
