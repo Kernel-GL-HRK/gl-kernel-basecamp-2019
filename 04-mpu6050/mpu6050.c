@@ -4,16 +4,87 @@
 #include <linux/err.h>
 #include <linux/i2c.h>
 #include <linux/i2c-dev.h>
+
 #include "mpu6050-regs.h"
+
+
+struct mpu6050_data {
+	struct i2c_client *drv_client;
+	int accel_values[3];
+	int gyro_values[3];
+	int temperature[2];
+};
+
+static struct mpu6050_data g_mpu6050_data;
+
+static int mpu6050_probe(struct i2c_client *drv_client,
+			 const struct i2c_device_id *id)
+{
+	dev_info(&drv_client->dev, "i2c driver probed\n");
+	return 0;
+}
+
+static int mpu6050_remove(struct i2c_client *drv_client)
+{
+	g_mpu6050_data.drv_client = 0;
+
+	dev_info(&drv_client->dev, "i2c driver removed\n");
+	return 0;
+}
+
+static const struct i2c_device_id mpu6050_idtable[] = {
+	{ "mpu6050", 0 },
+	{ }
+};
+MODULE_DEVICE_TABLE(i2c, mpu6050_idtable);
+
+static struct i2c_driver mpu6050_i2c_driver = {
+	.driver = {
+		.name = "gl_mpu6050",
+	},
+
+	.probe = mpu6050_probe,
+	.remove = mpu6050_remove,
+	.id_table = mpu6050_idtable,
+};
+
+static struct class *attr_class;
 
 static int mpu6050_init(void)
 {
+	int ret;
+
+	/* Create i2c driver */
+	ret = i2c_add_driver(&mpu6050_i2c_driver);
+	if (ret) {
+		pr_err("mpu6050: failed to add new i2c driver: %d\n", ret);
+		return ret;
+	}
+	pr_info("mpu6050: i2c driver created\n");
+
+	/* Create class */
+	attr_class = class_create(THIS_MODULE, "mpu6050");
+	if (IS_ERR(attr_class)) {
+		ret = PTR_ERR(attr_class);
+		pr_err("mpu6050: failed to create sysfs class: %d\n", ret);
+		return ret;
+	}
+	pr_info("mpu6050: sysfs class created\n");
+
 	pr_info("mpu6050: module loaded\n");
 	return 0;
 }
 
 static void mpu6050_exit(void)
 {
+	if (attr_class) {
+		class_destroy(attr_class);
+		pr_info("mpu6050: sysfs class destroyed\n");
+	}
+
+	i2c_del_driver(&mpu6050_i2c_driver);
+	pr_info("mpu6050: i2c driver deleted\n");
+
 	pr_info("mpu6050: module exited\n");
 }
 
