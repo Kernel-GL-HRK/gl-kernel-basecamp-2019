@@ -16,6 +16,9 @@ i2cset -y 0 $REG_MPU6050 $REG_PWR_MGMT_1 $MASK_DEVICE_RESET
 
 sleep 0.2
 
+for ((;;))
+do
+
 TEMP_H=$(i2cget -y 0 $REG_MPU6050 $REG_TEMP_OUT_H)
 
 printf "TEMP_OUT_H = %#x\n" $TEMP_H
@@ -23,5 +26,24 @@ printf "TEMP_OUT_H = %#x\n" $TEMP_H
 TEMP_L=$(i2cget -y 0 $REG_MPU6050 $REG_TEMP_OUT_L)
 
 printf "TEMP_OUT_L = %#x\n" $TEMP_L
+
+TEMP=$(( ($TEMP_H<<8) | $TEMP_L ))
+
+T=$(( ($TEMP & 0x7fff) - ($TEMP & 0x8000) ))
+
+TEMP=$(( $T/340 ))
+TEMP=$(( $TEMP+36 ))
+
+printf "TEMP_CELS. = %d\n" $TEMP
+
+FAR=$(( $(($TEMP * 9 / 5)) + 32))
+
+printf "TEMP_FAR. = %d\n\n" $FAR
+
+#printf "\n"
+
+sleep 1
+
+done
 
 fi
