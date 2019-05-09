@@ -36,10 +36,9 @@ module_param(all_memory, int, 0664);
 static int create_buffer(void)
 {
     all_memory += BUFFER_SIZE;
-    dev_buffer = kmalloc(all_memory, GFP_KERNEL);
+    dev_buffer = kzmalloc(all_memory, GFP_KERNEL);
     if (NULL == dev_buffer)
         return -ENOMEM;
-    memset(dev_buffer, 0, all_memory);
     return 0;
 }
 
@@ -47,8 +46,7 @@ static int create_buffer(void)
 static void cleanup_buffer(void)
 {
     if (dev_buffer) {
-        memset(dev_buffer, 0, all_memory);
-        kfree(dev_buffer);
+        kzfree(dev_buffer);
         dev_buffer = NULL;
     }
 }
@@ -62,7 +60,7 @@ static int check_ascii(const char*buf)
     {
         time = buf[i];
         printk(KERN_INFO "%d", time);
-        if (time < 33 || time > 126) {
+        if (time < 32 || time > 126) {
             return -EFAULT;
         }
     }
@@ -98,8 +96,6 @@ static int dev_close(struct inode *i, struct file *f)
 {
     printk(KERN_INFO "Driver: close()\n");
     return 0;
-}
-static ssize_t dev_read(struct file *f, char __user *buf, size_t len, loff_t *off)
 {
     int ret;
     printk(KERN_INFO "CharTechnologic: read from file %s\n", f->f_path.dentry->d_iname);
