@@ -12,14 +12,16 @@ struct mpu6050_data {
 	struct i2c_client *drv_client;
 	int accel_values[3];
 	int gyro_values[3];
-	int temperature;
+	int temperature[2];
 };
 
 static struct mpu6050_data g_mpu6050_data;
 
 static int mpu6050_read_data(void)
 {
-	int temp;
+	u8 tempL, tempH;
+	s16 temp;
+
 	struct i2c_client *drv_client = g_mpu6050_data.drv_client;
 
 	if (drv_client == 0)
@@ -33,11 +35,14 @@ static int mpu6050_read_data(void)
 	g_mpu6050_data.gyro_values[0] = (s16)((u16)i2c_smbus_read_word_swapped(drv_client, REG_GYRO_XOUT_H));
 	g_mpu6050_data.gyro_values[1] = (s16)((u16)i2c_smbus_read_word_swapped(drv_client, REG_GYRO_YOUT_H));
 	g_mpu6050_data.gyro_values[2] = (s16)((u16)i2c_smbus_read_word_swapped(drv_client, REG_GYRO_ZOUT_H));
-	/* Temperature in degrees C =
-	 * (TEMP_OUT Register Value  as a signed quantity)/340 + 36.53
-	 */
-	temp = (s16)((u16)i2c_smbus_read_word_swapped(drv_client, REG_TEMP_OUT_H));
-	g_mpu6050_data.temperature = (temp + 12420 + 170) / 340;
+
+	tempL = i2c_smbus_read_byte_data(drv_client, REG_TEMP_OUT_L);
+	tempH = i2c_smbus_read_byte_data(drv_client, REG_TEMP_OUT_H);
+	
+	temp = (tempH << 8) | tempL;
+
+	g_mpu6050_data.temperature[0] = ((temp + 12420) * 9 / 1700 + 32);
+	g_mpu6050_data.temperature[1] = ((temp + 12420) * 90 / 17) % 1000;
 
 	dev_info(&drv_client->dev, "sensor data read:\n");
 	dev_info(&drv_client->dev, "ACCEL[X,Y,Z] = [%d, %d, %d]\n",
@@ -48,8 +53,7 @@ static int mpu6050_read_data(void)
 		g_mpu6050_data.gyro_values[0],
 		g_mpu6050_data.gyro_values[1],
 		g_mpu6050_data.gyro_values[2]);
-	dev_info(&drv_client->dev, "TEMP = %d\n",
-		g_mpu6050_data.temperature);
+	dev_info(&drv_client->dev, "%d.%d\n", g_mpu6050_data.temperature[0], g_mpu6050_data.temperature[1]);
 
 	return 0;
 }
@@ -122,8 +126,7 @@ static struct i2c_driver mpu6050_i2c_driver = {
 	.id_table = mpu6050_idtable,
 };
 
-static ssize_t accel_x_show(struct class *class,
-			    struct class_attribute *attr, char *buf)
+static ssize_t accel_x_show(struct class *class, struct class_attribute *attr, char *buf)
 {
 	mpu6050_read_data();
 
@@ -131,8 +134,7 @@ static ssize_t accel_x_show(struct class *class,
 	return strlen(buf);
 }
 
-static ssize_t accel_y_show(struct class *class,
-			    struct class_attribute *attr, char *buf)
+static ssize_t accel_y_show(struct class *class, struct class_attribute *attr, char *buf)
 {
 	mpu6050_read_data();
 
@@ -140,8 +142,7 @@ static ssize_t accel_y_show(struct class *class,
 	return strlen(buf);
 }
 
-static ssize_t accel_z_show(struct class *class,
-			    struct class_attribute *attr, char *buf)
+static ssize_t accel_z_show(struct class *class, struct class_attribute *attr, char *buf)
 {
 	mpu6050_read_data();
 
@@ -149,8 +150,7 @@ static ssize_t accel_z_show(struct class *class,
 	return strlen(buf);
 }
 
-static ssize_t gyro_x_show(struct class *class,
-			   struct class_attribute *attr, char *buf)
+static ssize_t gyro_x_show(struct class *class, struct class_attribute *attr, char *buf)
 {
 	mpu6050_read_data();
 
@@ -158,8 +158,7 @@ static ssize_t gyro_x_show(struct class *class,
 	return strlen(buf);
 }
 
-static ssize_t gyro_y_show(struct class *class,
-			   struct class_attribute *attr, char *buf)
+static ssize_t gyro_y_show(struct class *class, struct class_attribute *attr, char *buf)
 {
 	mpu6050_read_data();
 
@@ -167,8 +166,7 @@ static ssize_t gyro_y_show(struct class *class,
 	return strlen(buf);
 }
 
-static ssize_t gyro_z_show(struct class *class,
-			   struct class_attribute *attr, char *buf)
+static ssize_t gyro_z_show(struct class *class, struct class_attribute *attr, char *buf)
 {
 	mpu6050_read_data();
 
@@ -176,12 +174,11 @@ static ssize_t gyro_z_show(struct class *class,
 	return strlen(buf);
 }
 
-static ssize_t temp_show(struct class *class,
-			 struct class_attribute *attr, char *buf)
+static ssize_t temp_show(struct class *class, struct class_attribute *attr, char *buf)
 {
 	mpu6050_read_data();
 
-	sprintf(buf, "%d\n", g_mpu6050_data.temperature);
+	sprintf(buf, "%d.%d\n", g_mpu6050_data.temperature[0], g_mpu6050_data.temperature[1]);
 	return strlen(buf);
 }
 
