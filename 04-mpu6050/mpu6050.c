@@ -19,8 +19,11 @@ static struct mpu6050_data g_mpu6050_data;
 
 static int mpu6050_read_data(void)
 {
-	u8 tempL, tempH;
+	u8 tempH, tempL;
 	s16 temp;
+	u16 count;
+	s32 accInt = 0;
+	s16 accFract = 0;
 
 	struct i2c_client *drv_client = g_mpu6050_data.drv_client;
 
@@ -36,13 +39,23 @@ static int mpu6050_read_data(void)
 	g_mpu6050_data.gyro_values[1] = (s16)((u16)i2c_smbus_read_word_swapped(drv_client, REG_GYRO_YOUT_H));
 	g_mpu6050_data.gyro_values[2] = (s16)((u16)i2c_smbus_read_word_swapped(drv_client, REG_GYRO_ZOUT_H));
 
-	tempL = i2c_smbus_read_byte_data(drv_client, REG_TEMP_OUT_L);
-	tempH = i2c_smbus_read_byte_data(drv_client, REG_TEMP_OUT_H);
-	
-	temp = (tempH << 8) | tempL;
+	for (count = 0; count < 1000; count++) {
+		tempL = i2c_smbus_read_byte_data(drv_client, REG_TEMP_OUT_L);
+		tempH = i2c_smbus_read_byte_data(drv_client, REG_TEMP_OUT_H);
 
-	g_mpu6050_data.temperature[0] = ((temp + 12420) * 9 / 1700 + 32);
-	g_mpu6050_data.temperature[1] = ((temp + 12420) * 90 / 17) % 1000;
+		temp = (tempH << 8) | tempL;
+
+		accInt += ((temp + 12420) * 9 / 1700 + 32);
+		accFract += ((temp + 12420) * 90 / 17) % 1000;
+
+		while (accFract >= 1000) {
+			accFract -= 1000;
+			accInt++;
+		}
+	}
+
+	g_mpu6050_data.temperature[0] = accInt / 1000;
+	g_mpu6050_data.temperature[1] = accFract;
 
 	dev_info(&drv_client->dev, "sensor data read:\n");
 	dev_info(&drv_client->dev, "ACCEL[X,Y,Z] = [%d, %d, %d]\n",
