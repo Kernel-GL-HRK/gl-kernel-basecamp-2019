@@ -11,4 +11,7 @@ TEMP=$(i2cget -y 0 $REG_MPU6050 $REG_WHO_AM_I)
 if [ "$TEMP" != "$REG_MPU6050" ]
 	then echo "failed to connect to mpu6050"
 else printf "Who_am_I = %#x\n\n" $TEMP
+
+i2cset -y 0 $REG_MPU6050 $REG_PWR_MGMT_1 $MASK_DEVICE_RESET
+
 fi
