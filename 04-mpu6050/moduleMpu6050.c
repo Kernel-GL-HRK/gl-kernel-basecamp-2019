@@ -90,15 +90,42 @@ static ssize_t accel_z_show(struct class *class, struct class_attribute *attr, c
 }
 static ssize_t gyro_x_show(struct class *class, struct class_attribute *attr, char *buf)
 {
-    return 0;
+    uint8_t h;
+    uint8_t l;
+    uint16_t t;
+    h = i2c_smbus_read_byte_data(gl_mpu6050_data.drv_client, REG_GYRO_XOUT_H);
+    l = i2c_smbus_read_byte_data(gl_mpu6050_data.drv_client, REG_GYRO_XOUT_L);
+    t = (h << 8 | l);
+    gl_mpu6050_data.gyro_values[0] = (t & 0x7fff) - (t & 0x8000);
+    printk(KERN_INFO  "Gyro_X: [%d]\n", gl_mpu6050_data.gyro_values[0]);
+    sprintf(buf, "Gyro_X: [%d]\n", gl_mpu6050_data.gyro_values[0]);
+    return strlen(buf);
 }
 static ssize_t gyro_y_show(struct class *class, struct class_attribute *attr, char *buf)
 {
-    return 0;
+    uint8_t h;
+    uint8_t l;
+    uint16_t t;
+    h = i2c_smbus_read_byte_data(gl_mpu6050_data.drv_client, REG_GYRO_YOUT_H);
+    l = i2c_smbus_read_byte_data(gl_mpu6050_data.drv_client, REG_GYRO_YOUT_L);
+    t = (h << 8 | l);
+    gl_mpu6050_data.gyro_values[1] = (t & 0x7fff) - (t & 0x8000);
+    printk(KERN_INFO  "Gyro_Y: [%d]\n", gl_mpu6050_data.gyro_values[1]);
+    sprintf(buf, "Gyro_Y: [%d]\n", gl_mpu6050_data.gyro_values[1]);
+    return strlen(buf);
 }
 static ssize_t gyro_z_show(struct class *class, struct class_attribute *attr, char *buf)
 {
-    return 0;
+    uint8_t h;
+    uint8_t l;
+    uint16_t t;
+    h = i2c_smbus_read_byte_data(gl_mpu6050_data.drv_client, REG_GYRO_ZOUT_H);
+    l = i2c_smbus_read_byte_data(gl_mpu6050_data.drv_client, REG_GYRO_ZOUT_L);
+    t = (h << 8 | l);
+    gl_mpu6050_data.gyro_values[2] = (t & 0x7fff) - (t & 0x8000);
+    printk(KERN_INFO  "Gyro_Z: [%d]\n", gl_mpu6050_data.gyro_values[2]);
+    sprintf(buf, "Gyro_Z: [%d]\n", gl_mpu6050_data.gyro_values[2]);
+    return strlen(buf);
 }
 static ssize_t temperature_show(struct class *class, struct class_attribute *attr, char *buf)
 {
@@ -121,9 +148,6 @@ static ssize_t temperature_show(struct class *class, struct class_attribute *att
     sprintf(buf,"Temperature: %d.%03d C\nTemperature: %d.%03d F\n", gl_mpu6050_data.temperatureC[0], gl_mpu6050_data.temperatureC[1], gl_mpu6050_data.temperatureF[0], gl_mpu6050_data.temperatureF[1]);
     return strlen(buf);
 }
-
-
-
 
 static int mpu6050_probe(struct i2c_client *drv_client, const struct i2c_device_id *id)
 {
