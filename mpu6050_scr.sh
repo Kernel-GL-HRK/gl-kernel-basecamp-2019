@@ -1,1 +1,7 @@
 #!/bin/bash
+
+Power="0x6B"
+TEMP_OUT_H="0x41"
+TEMP_OUT_L="0x42"
+MPU6050="0x68"
+WHO_AM_I="0x75"
