@@ -31,14 +31,13 @@ TEMP=$(( ($TEMP_H<<8) | $TEMP_L ))
 
 T=$(( ($TEMP & 0x7fff) - ($TEMP & 0x8000) ))
 
-TEMP=$(( $T/340 ))
-TEMP=$(( $TEMP+36 ))
+TEMP_CELS=$(echo "scale = 3; $T/340 +36.53" |bc)
 
-printf "TEMP_CELS. = %d\n" $TEMP
+printf "TEMP_CELS. = %.3f\n" $TEMP_CELS
 
-FAR=$(( $(($TEMP * 9 / 5)) + 32))
+FAHR=$(echo "scale = 3; ($TEMP_CELS * 9 / 5) + 32" | bc)
 
-printf "TEMP_FAR. = %d\n\n" $FAR
+printf "TEMP_FAR. = %.3f\n\n" $FAHR
 
 #printf "\n"
 

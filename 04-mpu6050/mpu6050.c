@@ -45,13 +45,14 @@ static int mpu6050_read_data(void)
 
 		temp = (tempH << 8) | tempL;
 
-		accInt += ((temp + 12420) * 9 / 1700 + 32);
 		accFract += ((temp + 12420) * 90 / 17) % 1000;
-
-		while (accFract >= 1000) {
-			accFract -= 1000;
-			accInt++;
+		if (accFract >= 1000)
+		{
+			accFract -= 1000;	
+			accInt += 1;
 		}
+
+		accInt += ((temp + 12420) * 9 / 1700 + 32);
 	}
 
 	g_mpu6050_data.temperature[0] = accInt / 1000;
@@ -66,7 +67,7 @@ static int mpu6050_read_data(void)
 		g_mpu6050_data.gyro_values[0],
 		g_mpu6050_data.gyro_values[1],
 		g_mpu6050_data.gyro_values[2]);
-	dev_info(&drv_client->dev, "%d.%d\n", g_mpu6050_data.temperature[0], g_mpu6050_data.temperature[1]);
+	dev_info(&drv_client->dev, "%d.%03d\n", g_mpu6050_data.temperature[0], g_mpu6050_data.temperature[1]);
 
 	return 0;
 }
@@ -191,7 +192,7 @@ static ssize_t temp_show(struct class *class, struct class_attribute *attr, char
 {
 	mpu6050_read_data();
 
-	sprintf(buf, "%d.%d\n", g_mpu6050_data.temperature[0], g_mpu6050_data.temperature[1]);
+	sprintf(buf, "%d.%03d\n", g_mpu6050_data.temperature[0], g_mpu6050_data.temperature[1]);
 	return strlen(buf);
 }
 
