@@ -44,14 +44,15 @@ static int mpu6050_read_data(void)
 
 		temp = (TEMP_OUT_H << 8) | TEMP_OUT_L;
 
-		integer += ((temp + 12420) * 9 / 1700 + 32);
+		
 		rest += ((temp + 12420) * 90 / 17) % 1000;
 
 
-		while (rest >= 1000) {
-			rest -= 1000;
+		if (rest >= 1000) {
+			rest = rest - 1000;
 			integer++;
 		}
+		integer += ((temp + 12420) * 9 / 1700 + 32);
 	}
 
 	g_mpu6050_data.temperature[0] = integer / 1000;
@@ -68,7 +69,7 @@ static int mpu6050_read_data(void)
 		g_mpu6050_data.gyro_values[0],
 		g_mpu6050_data.gyro_values[1],
 		g_mpu6050_data.gyro_values[2]);
-	dev_info(&drv_client->dev, "TEMP = [%d.%d F]\n",
+	dev_info(&drv_client->dev, "TEMP = [%d.%d Fahrenheits]\n",
 		g_mpu6050_data.temperature);
 
 	return 0;
