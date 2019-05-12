@@ -29,10 +29,10 @@ do
     temp_sig=$(((temp_adc_unsig & 0x7fff)- (temp_adc_unsig & 0x8000)))
     echo "Value ADC: $temp_sig"
 
-    temp_c=$(echo " scale = 2; $temp_sig / 340 + 36.53" | bc)
+    temp_c=$(echo " scale = 3; $temp_sig / 340 + 36.53" | bc)
     echo "Value temperature in Celsius: $temp_c"
 
-    temp_f=$(echo " scale = 2; (9/5 * $temp_c) + 32" | bc)
+    temp_f=$(echo " scale = 3; (9/5 * $temp_c) + 32" | bc)
     echo "Value temperature in Fahrenheit: $temp_f"
     echo ""
     sleep 1
