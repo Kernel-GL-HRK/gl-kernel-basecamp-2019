@@ -69,7 +69,7 @@ static int mpu6050_read_data(void)
 		g_mpu6050_data.gyro_values[0],
 		g_mpu6050_data.gyro_values[1],
 		g_mpu6050_data.gyro_values[2]);
-	dev_info(&drv_client->dev, "TEMP = [%d.%d Fahrenheits]\n",
+	dev_info(&drv_client->dev, "TEMP = [%d.%03d Fahrenheits]\n",
 		g_mpu6050_data.temperature);
 
 	return 0;
@@ -202,7 +202,7 @@ static ssize_t temp_show(struct class *class,
 {
 	mpu6050_read_data();
 
-	sprintf(buf, "%d.%d Fahrenheits\n", g_mpu6050_data.temperature[0], g_mpu6050_data.temperature[1]);
+	sprintf(buf, "%d.%03d Fahrenheits\n", g_mpu6050_data.temperature[0], g_mpu6050_data.temperature[1]);
 	return strlen(buf);
 }
 
