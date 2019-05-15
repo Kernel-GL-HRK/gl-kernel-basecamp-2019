@@ -31,7 +31,9 @@ static int buffer_create(void)
 
     if (NULL == data_buff) 
         return -ENOMEM;
-
+	
+	printk(KERN_INFO "ThM: Memory allocated\n");
+	
     return 0;
 }
 
@@ -55,7 +57,9 @@ static int create_proc(void)
     if (NULL == proc_file){
         return -EFAULT;
 	}
-
+	
+	printk(KERN_INFO "ThM: Created procfs interface\n");
+	
 	return 0;
 }
 
@@ -123,16 +127,36 @@ void threadModule_exit(void)
 
 int threadModule_init(void)
 {
-	buffer_create();
+	int err;
+	
+	printk(KERN_INFO "ThM: Loading module...\n");
+	
+	err = buffer_create();
+	
+	if(err < 0){
+		printk(KERN_ALERT "ThM: Failed to allocate memory\n");
+		goto abort;
+	}
 	
 	proc_fops.read = proc_read;
 	proc_fops.write = proc_write;
 	
-	create_proc();
+	err = create_proc();
+	
+	if(err < 0){
+		printk(KERN_ALERT "ThM: Failed to create procfs interface\n");
+		goto abort;
+	}
 	
 	printk(KERN_INFO "ThM: Module loaded\n");
 	
 	return 0;
+	
+	abort:
+	
+	threadModule_exit();
+	
+	return -1;
 }
 
 module_init(threadModule_init);
