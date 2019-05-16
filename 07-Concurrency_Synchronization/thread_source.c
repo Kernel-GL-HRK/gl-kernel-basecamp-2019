@@ -5,6 +5,7 @@
 #include <linux/slab.h>
 #include <linux/device.h>
 #include <linux/module.h>
+#include <linux/string.h>
 
 #ifndef MODULE_NAME
 #define MODULE_NAME 	"ThreadModule"
@@ -12,7 +13,7 @@
 
 #define PROC_DIRECTORY 	"threadDevice"
 #define PROC_FILENAME 	"thm"
-#define BUFFER_SIZE 20
+#define BUFFER_SIZE 40
 
 static char *data_buff;
 
@@ -24,13 +25,17 @@ static int proc_read(struct file *file_p, char __user *buffer, size_t length, lo
 
 static struct file_operations proc_fops;
 
+//=================================================================
+//======================BUFFER OPERATIONS=========================
+//=================================================================
 
 static int buffer_create(void)
 {
     data_buff = kzalloc(BUFFER_SIZE, GFP_KERNEL);
 
-    if (NULL == data_buff) 
+    if (NULL == data_buff) {
         return -ENOMEM;
+	}
 	
 	printk(KERN_INFO "ThM: Memory allocated\n");
 	
@@ -44,6 +49,52 @@ static void buffer_clean(void)
         data_buff = NULL;
     }
 }
+
+
+//==================================================================
+//==========================TASK FUNCTIONS==========================
+//==================================================================
+
+static void print_task(char *symbol, int block_len, int block_count)
+{
+	int i;
+	int j;
+	
+	for(i = 0; i < block_count; i++){
+		printk("block %d:", i+1);
+		for(j = 0; j < block_len; j++){
+			printk("%c", *symbol);
+		}
+		printk("\n");
+	}
+}
+
+static void implement_task(char *task)
+{
+	char symbol[1];
+	long block_len;
+	long block_count;
+	char tmp[5];
+	
+	printk("%s", task);
+	
+	strncpy(symbol, task, 1);
+	printk("%s", symbol);
+	
+	strncpy(tmp, task + 2, 1);
+	printk("%s", tmp);
+	block_len = simple_strtol(tmp, NULL, 10);
+	
+	strncpy(tmp, task + 4, 1);
+	block_count = simple_strtol(tmp, NULL, 10);
+	printk("%s", tmp);
+	
+	print_task(symbol, block_len, block_count);
+}
+
+//==================================================================
+//=======================PROC FS OPERATIONS=========================
+//==================================================================
 
 static int create_proc(void)
 {
@@ -114,6 +165,10 @@ static int proc_read(struct file *filp, char *buffer, size_t len, loff_t *offset
 	
 	return len;
 }
+
+//==================================================================
+//==========================INIT/EXIT FUNCTIONS=====================
+//==================================================================
 
 void threadModule_exit(void)
 {
