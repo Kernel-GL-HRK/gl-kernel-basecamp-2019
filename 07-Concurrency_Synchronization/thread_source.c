@@ -21,20 +21,25 @@
 #define POOL_SIZE 3
 
 static char *data_buff;
+static char *work;
 
 static struct proc_dir_entry *proc_dir;
 static struct proc_dir_entry *proc_file;
 static size_t data_size = 0;
 
 static int proc_read(struct file *file_p, char __user *buffer, size_t length, loff_t *offset);
+static int stop = 0;
+static int i = POOL_SIZE;
 
 static struct file_operations proc_fops;
 
 static struct semaphore workers;
 static struct mutex data_lock;
+static struct mutex count_lock;
+static struct mutex task_lock;
 
 static struct task_struct *master_thread;
-static struct task_struct *worker_thread;
+static struct task_struct *worker_thread[POOL_SIZE];
 
 static struct completion new_data;
 
@@ -61,6 +66,8 @@ static void buffer_clean(void)
         kfree(data_buff);
         data_buff = NULL;
     }
+    
+    printk(KERN_INFO "ThM: Memory freed\n");
 }
 
 //==================================================================
@@ -72,6 +79,8 @@ static void print_task(char *symbol, int block_len, int block_count)
 	int i;
 	int j;
 	
+	printk("Worker pid: %d", current->pid);
+	
 	for(i = 0; i < block_count; i++){
 		printk("block %d:", i+1);
 		for(j = 0; j < block_len; j++){
@@ -79,6 +88,11 @@ static void print_task(char *symbol, int block_len, int block_count)
 		}
 		printk("\n");
 	}
+	
+	up(&workers);
+
+	i++;
+
 }
 
 static void implement_task(char *task)
@@ -105,8 +119,10 @@ static void implement_task(char *task)
 
 static int worker_fun(void *args)
 {
-	char *work = (char *)args;
+	mutex_lock(&task_lock);
+	work = (char *)args;
 	implement_task(work);
+	mutex_unlock(&task_lock);
 	return 0;
 }
 
@@ -119,6 +135,10 @@ static int master_fun(void *args)
 		
 		wait_for_completion(&new_data);
 		reinit_completion(&new_data);
+		
+		if(stop)
+			break;
+		
 		printk("Master Thread: Data received");
 		
 		mutex_lock(&data_lock);
@@ -126,11 +146,26 @@ static int master_fun(void *args)
 		mutex_unlock(&data_lock);
 		
 		printk("Master Thread: Calling worker");
-		worker_thread = kthread_run(worker_fun, task, "worker_thread");
+		down(&workers);
+		worker_thread[i] = kthread_run(worker_fun, task, "worker_thread");
+		mutex_lock(&count_lock);
+		i--;
+		mutex_unlock(&count_lock);
 		
 		printk("Master Thread: Data proccessed");
 	}
 	return 0;
+}
+
+static void stop_threads(void)
+{
+	stop = 1;
+	
+	complete(&new_data);
+	
+	kthread_stop(master_thread);
+	
+	printk(KERN_INFO "ThM: Master thread stopped\n");
 }
 
 //==================================================================
@@ -167,6 +202,8 @@ static void cleanup_proc(void)
         remove_proc_entry(PROC_DIRECTORY, NULL);
         proc_dir = NULL;
     }
+    
+    printk(KERN_INFO "ThM: Removed procfs interface\n");
 }
 
 static int proc_write(struct file *filp, const char *buf, size_t count, loff_t *offp)
@@ -179,10 +216,10 @@ static int proc_write(struct file *filp, const char *buf, size_t count, loff_t *
 		data_size = BUFFER_SIZE;
 	}
 	
-	//mutex_lock_interruptible(&data_lock);
+	mutex_lock(&data_lock);
 	err = raw_copy_from_user(data_buff, buf, data_size);
 	complete(&new_data);
-	//mutex_unlock(&data_lock);
+	mutex_unlock(&data_lock);
 	
 	if(err){
 		return -EFAULT;
@@ -207,9 +244,9 @@ static int proc_read(struct file *filp, char *buffer, size_t len, loff_t *offset
 		len = strlen(msg) - *offset;
 	}
 	
-	//mutex_lock_interruptible(&data_lock);
+	mutex_lock(&data_lock);
 	result = raw_copy_to_user((void*)buffer, msg - *offset, len);
-	//mutex_unlock(&data_lock);
+	mutex_unlock(&data_lock);
 	
 	*offset += len;
 	
@@ -222,9 +259,8 @@ static int proc_read(struct file *filp, char *buffer, size_t len, loff_t *offset
 
 void threadModule_exit(void)
 {
-	complete(&new_data);
 	
-	kthread_stop(master_thread);
+	stop_threads();
 	
 	cleanup_proc();
 	
