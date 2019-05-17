@@ -78,21 +78,22 @@ static void print_task(char *symbol, int block_len, int block_count)
 {
 	int i;
 	int j;
+	char *block = kzalloc(sizeof(char) * block_len, GFP_KERNEL);
 	
 	printk("Worker pid: %d", current->pid);
 	
+	for(j = 0; j < block_len; j++){
+		strcpy(block + j, symbol);
+	}
+	
 	for(i = 0; i < block_count; i++){
-		printk("block %d:", i+1);
-		for(j = 0; j < block_len; j++){
-			printk("%c", *symbol);
-		}
+		strcpy(block + block_len, "\0");
+		printk("Block %d:\n %s", i+1, block);
 		printk("\n");
 	}
 	
 	up(&workers);
-
-	i++;
-
+	
 }
 
 static void implement_task(char *task)
@@ -100,7 +101,7 @@ static void implement_task(char *task)
 	char symbol[1];
 	long block_len;
 	long block_count;
-	char tmp[5];
+	char *tmp = kzalloc(sizeof(char) * strlen(task), GFP_KERNEL);
 	
 	strncpy(symbol, task, 1);
 	
@@ -134,20 +135,21 @@ static int master_fun(void *args)
 	while(!kthread_should_stop()){
 		
 		wait_for_completion(&new_data);
-		reinit_completion(&new_data);
+		mutex_lock(&data_lock);
+		strncpy(task, data_buff, 6);
 		
 		if(stop)
 			break;
 		
-		printk("Master Thread: Data received");
+		reinit_completion(&new_data);
 		
-		mutex_lock(&data_lock);
-		strncpy(task, data_buff, 6);
-		mutex_unlock(&data_lock);
+		printk("Master Thread: Data received");
 		
 		printk("Master Thread: Calling worker");
 		down(&workers);
 		worker_thread[i] = kthread_run(worker_fun, task, "worker_thread");
+		mutex_unlock(&data_lock);
+		
 		mutex_lock(&count_lock);
 		i--;
 		mutex_unlock(&count_lock);
