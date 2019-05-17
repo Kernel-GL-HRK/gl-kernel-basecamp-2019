@@ -39,7 +39,6 @@ static int mpu6050_read_data(void)
 	temp = (s16)((u16)i2c_smbus_read_word_swapped(drv_client, REG_TEMP_OUT_H));
 	g_mpu6050_data.temperature = ((temp + 12420 + 170) / 340) * (9/5) +32;
 
-	printk(KERN_INFO  "TEMP = [%d.%03d F]\n", g_mpu6050_data.temperature);
 	dev_info(&drv_client->dev, "sensor data read:\n");
 	dev_info(&drv_client->dev, "ACCEL[X,Y,Z] = [%d, %d, %d]\n",
 		g_mpu6050_data.accel_values[0],
@@ -128,7 +127,7 @@ static ssize_t accel_x_show(struct class *class,
 {
 	mpu6050_read_data();
 
-	sprintf(buf, "%d\n", g_mpu6050_data.accel_values[0]);
+	sprintf(buf, "%%d.%03d F\n", g_mpu6050_data.accel_values[0]);
 	return strlen(buf);
 }
 
