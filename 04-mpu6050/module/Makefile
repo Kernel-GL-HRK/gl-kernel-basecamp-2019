@@ -8,7 +8,6 @@ $(TARGET)-objs := mpu6050_source.o
 
 else
 
-KERNELDIR := $(BUILD)
 
 all:
 	$(MAKE) -C $(KERNELDIR) M=$(CURDIR) modules
