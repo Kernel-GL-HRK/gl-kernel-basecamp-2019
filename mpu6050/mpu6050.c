@@ -12,14 +12,14 @@ struct mpu6050_data {
 	struct i2c_client *drv_client;
 	int accel_values[3];
 	int gyro_values[3];
-	int temperature;
+	short temperature;
 };
 
 static struct mpu6050_data g_mpu6050_data;
 
 static int mpu6050_read_data(void)
 {
-	int temp;
+	short temp;
 	struct i2c_client *drv_client = g_mpu6050_data.drv_client;
 
 	if (drv_client == 0)
@@ -37,7 +37,7 @@ static int mpu6050_read_data(void)
 	 * (TEMP_OUT Register Value  as a signed quantity)/340 + 36.53
 	 */
 	temp = (s16)((u16)i2c_smbus_read_word_swapped(drv_client, REG_TEMP_OUT_H));
-	g_mpu6050_data.temperature = (temp + 12420 + 170) / 340;
+	g_mpu6050_data.temperature = ((temp + 12420 + 170) / 340) * (9/5) +32;
 
 	dev_info(&drv_client->dev, "sensor data read:\n");
 	dev_info(&drv_client->dev, "ACCEL[X,Y,Z] = [%d, %d, %d]\n",
@@ -48,7 +48,7 @@ static int mpu6050_read_data(void)
 		g_mpu6050_data.gyro_values[0],
 		g_mpu6050_data.gyro_values[1],
 		g_mpu6050_data.gyro_values[2]);
-	dev_info(&drv_client->dev, "TEMP = %d\n",
+	dev_info(&drv_client->dev, "TEMP = [%d.%03d F]\n",
 		g_mpu6050_data.temperature);
 
 	return 0;
@@ -127,7 +127,7 @@ static ssize_t accel_x_show(struct class *class,
 {
 	mpu6050_read_data();
 
-	sprintf(buf, "%d\n", g_mpu6050_data.accel_values[0]);
+	sprintf(buf, "%%d.%03d F\n", g_mpu6050_data.accel_values[0]);
 	return strlen(buf);
 }
 
@@ -185,14 +185,13 @@ static ssize_t temp_show(struct class *class,
 	return strlen(buf);
 }
 
-CLASS_ATTR(accel_x, 0444, &accel_x_show, NULL);
-CLASS_ATTR(accel_y, 0444, &accel_y_show, NULL);
-CLASS_ATTR(accel_z, 0444, &accel_z_show, NULL);
-CLASS_ATTR(gyro_x, 0444, &gyro_x_show, NULL);
-CLASS_ATTR(gyro_y, 0444, &gyro_y_show, NULL);
-CLASS_ATTR(gyro_z, 0444, &gyro_z_show, NULL);
-CLASS_ATTR(temperature, 0444, &temp_show, NULL);
-
+static struct class_attribute class_attr_accel_x = __ATTR(accel_x, 0444, &accel_x_show, NULL);
+static struct class_attribute class_attr_accel_y = __ATTR(accel_y, 0444, &accel_y_show, NULL);
+static struct class_attribute class_attr_accel_z = __ATTR(accel_z, 0444, &accel_z_show, NULL);
+static struct class_attribute class_attr_gyro_x = __ATTR(gyro_x, 0444, &gyro_x_show, NULL);
+static struct class_attribute class_attr_gyro_y = __ATTR(gyro_y, 0444, &gyro_y_show, NULL);
+static struct class_attribute class_attr_gyro_z = __ATTR(gyro_z, 0444, &gyro_z_show, NULL);
+static struct class_attribute class_attr_temperature = __ATTR(temperature, 0444, &temp_show, NULL);
 static struct class *attr_class;
 
 static int mpu6050_init(void)
