@@ -50,7 +50,7 @@ static int mpu6050_read_data(void)
 		g_mpu6050_data.gyro_values[1],
 		g_mpu6050_data.gyro_values[2]);
 	dev_info(&drv_client->dev, "TEMP = %d.%03d\n",
-		g_mpu6050_data.temperature / shift_number , g_mpu6050_data.temperature % shift_number);
+		g_mpu6050_data.temperature / shift_number, g_mpu6050_data.temperature % shift_number);
 
 	return 0;
 }
