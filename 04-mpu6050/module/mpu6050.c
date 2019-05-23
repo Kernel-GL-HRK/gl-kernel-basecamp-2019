@@ -9,12 +9,13 @@
 
 #include "mpu6050-regs.h"
 
+#define PRECISION 1000
 
 struct mpu6050_data {
 	struct i2c_client *drv_client;
 	int accel_values[3];
 	int gyro_values[3];
-	int temperature_c;
+	int temperature[2];
 };
 
 static struct mpu6050_data g_mpu6050_data;
@@ -39,8 +40,10 @@ static int mpu6050_read_data(void)
 	 * (TEMP_OUT Register Value  as a signed quantity)/340 + 36.53
 	 */
 	temp_raw = (s16)((u16)i2c_smbus_read_word_swapped(drv_client, REG_TEMP_OUT_H));
-	g_mpu6050_data.temperature_c = (temp_raw / 340) + 36;
-
+	int temp_full = (temp_raw * PRECISION / 340) + 36530; //36.53 = 36530
+	g_mpu6050_data.temperature[0] =  temp_full / PRECISION;
+	g_mpu6050_data.temperature[1] =  temp_full % PRECISION;
+	int t_faren_full = temp_full * 9 / 5 + 32 * PRECISION; // F = C * 9 / 5 + 32
 	dev_info(&drv_client->dev, "sensor data read:\n");
 	dev_info(&drv_client->dev, "ACCEL[X,Y,Z] = [%d, %d, %d]\n",
 		g_mpu6050_data.accel_values[0],
@@ -50,9 +53,9 @@ static int mpu6050_read_data(void)
 		g_mpu6050_data.gyro_values[0],
 		g_mpu6050_data.gyro_values[1],
 		g_mpu6050_data.gyro_values[2]);
-	dev_info(&drv_client->dev, "TEMP = %d\n",
-		g_mpu6050_data.temperature_c);
-
+	dev_info(&drv_client->dev, "TEMP[C, F] = [%d.%03d, %d.%03d]\n",
+		g_mpu6050_data.temperature[0], g_mpu6050_data.temperature[1],
+		t_faren_full / PRECISION, t_faren_full % PRECISION);
 	return 0;
 }
 
@@ -182,15 +185,16 @@ static ssize_t temp_c_show(struct class *class,
 {
 	mpu6050_read_data();
 
-	sprintf(buf, "%d\n", g_mpu6050_data.temperature_c);
+	sprintf(buf, "%d.%03d\n", g_mpu6050_data.temperature[0], g_mpu6050_data.temperature[1]);
 	return strlen(buf);
 }
 static ssize_t temp_f_show(struct class *class,
 			 struct class_attribute *attr, char *buf)
 {
 	mpu6050_read_data();
-
-	sprintf(buf, "%d\n", g_mpu6050_data.temperature_c * (9 / 5) + 32);
+	int t_faren_full = g_mpu6050_data.temperature[0] * PRECISION + g_mpu6050_data.temperature[1];
+	t_faren_full = t_faren_full * 9 / 5 + 32 * PRECISION;
+	sprintf(buf, "%d.%03d\n", t_faren_full / PRECISION, t_faren_full % PRECISION);
 	return strlen(buf);
 }
 
