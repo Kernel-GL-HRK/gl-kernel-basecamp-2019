@@ -4,6 +4,8 @@
 #include <linux/err.h>
 #include <linux/i2c.h>
 #include <linux/i2c-dev.h>
+#include <linux/gpio.h>
+#include <linux/interrupt.h>
 
 // Define mpu6050 Register values
 
@@ -32,10 +34,19 @@
 #define REG_PWR_MGMT_2		0x6C
 #define REG_WHO_AM_I		0x75
 #define MPU6050_ADDR    	0x68
+#define MOT_THR            0x1F  
+#define MOT_DUR            0x20  
+#define MOT_DETECT_CTRL    0x69
+
+#define GPIO_INTERRUPT	6
 
 // Define byteshift parameters
 
 #define ACCURACY        	1000
+
+static unsigned int interrupt_pin = GPIO_INTERRUPT;
+static unsigned int irqNumber;
+static irq_handler_t irqHandler(unsigned int irq, void *dev_id, struct pt_regs *regs);
 
 // Define data values
 
@@ -104,10 +115,13 @@ static int mpu6050_probe(struct i2c_client *drv_client, const struct i2c_device_
 
 	i2c_smbus_write_byte_data(drv_client, REG_CONFIG, 0);
 	i2c_smbus_write_byte_data(drv_client, REG_GYRO_CONFIG, 0);
-	i2c_smbus_write_byte_data(drv_client, REG_ACCEL_CONFIG, 0);
+	i2c_smbus_write_byte_data(drv_client, REG_INT_PIN_CFG, 0x20);
+	i2c_smbus_write_byte_data(drv_client, REG_ACCEL_CONFIG, 0x01);
+	i2c_smbus_write_byte_data(drv_client, MOT_THR, 0x14);
+	i2c_smbus_write_byte_data(drv_client, MOT_DUR, 0x01);
+	i2c_smbus_write_byte_data(drv_client, MOT_DETECT_CTRL, 0x15);
+	i2c_smbus_write_byte_data(drv_client, REG_INT_ENABLE, 0x40);
 	i2c_smbus_write_byte_data(drv_client, REG_FIFO_EN, 0);
-	i2c_smbus_write_byte_data(drv_client, REG_INT_PIN_CFG, 0);
-	i2c_smbus_write_byte_data(drv_client, REG_INT_ENABLE, 0);
 	i2c_smbus_write_byte_data(drv_client, REG_USER_CTRL, 0);
 	i2c_smbus_write_byte_data(drv_client, REG_PWR_MGMT_1, 0);
 	i2c_smbus_write_byte_data(drv_client, REG_PWR_MGMT_2, 0);
@@ -121,6 +135,13 @@ static int mpu6050_probe(struct i2c_client *drv_client, const struct i2c_device_
 
 static int mpu6050_remove(struct i2c_client *drv_client)
 {
+	i2c_smbus_write_byte_data(drv_client, REG_INT_PIN_CFG, 0);
+	i2c_smbus_write_byte_data(drv_client, REG_ACCEL_CONFIG, 0);
+	i2c_smbus_write_byte_data(drv_client, MOT_THR, 0);
+	i2c_smbus_write_byte_data(drv_client, MOT_DUR, 0);
+	i2c_smbus_write_byte_data(drv_client, MOT_DETECT_CTRL, 0);
+	i2c_smbus_write_byte_data(drv_client, REG_INT_ENABLE, 0);
+	
 	mpu6050_data.drv_client = 0;
 	printk(KERN_INFO "mpu6050: i2c driver removed\n");
 
@@ -147,6 +168,14 @@ static struct i2c_driver mpu6050_driver = {
 	.id_table = mpu6050_idtable,
 	
 };
+
+//Interrupt handling
+
+static irq_handler_t irqHandler(unsigned int irq, void *dev_id, struct pt_regs *regs)
+{
+	printk("Device moved! Interrupt is called");
+	return (irq_handler_t)IRQ_HANDLED;
+}
 
 // Accelerometer show functions
 
@@ -251,7 +280,26 @@ static int mpu6050_init(void)
 	}
 
 	printk(KERN_INFO "mpu6050: i2c driver created\n");
+	
+	//interrupt initialization
+	gpio_request(interrupt_pin, "fancy label");
+	gpio_direction_input(interrupt_pin);
+	gpio_set_debounce(interrupt_pin, 50);
+	gpio_export(interrupt_pin, false);
+	
+	irqNumber = gpio_to_irq(interrupt_pin);
+	
+	ret = request_irq(irqNumber,           // requested interrupt
+                       (irq_handler_t) irqHandler, // pointer to handler function
+                       IRQF_TRIGGER_RISING, // interrupt mode flag
+                       "mpu6050Handler",        // used in /proc/interrupts
+                       NULL);               // the *dev_id shared interrupt lines, NULL is okay
 
+	if (ret) {
+		printk(KERN_ERR "mpu6050: Failed to request irq\n");
+		return ret;
+	}
+	
 	// Sysfs class creation
 
 	attribute_class = class_create(THIS_MODULE, "mpu6050");
@@ -333,8 +381,11 @@ static void mpu6050_exit(void)
 	class_remove_file(attribute_class, &class_attr_gyroscope_y);
 	class_remove_file(attribute_class, &class_attr_gyroscope_z);
 
+	free_irq(irqNumber, NULL);
+	
 	class_destroy(attribute_class);
 	i2c_del_driver(&mpu6050_driver);
+	gpio_free(interrupt_pin);
 
 	printk(KERN_INFO "mpu6050: i2c driver deleted\n");
 	printk(KERN_INFO "mpu6050: Module exited\n");
