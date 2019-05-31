@@ -6,6 +6,10 @@
 #include <linux/device.h>
 #include <linux/module.h>
 #include <linux/string.h>
+#include <linux/kthread.h>
+#include <linux/mutex.h>
+#include <linux/delay.h>
+#include <linux/semaphore.h>
 
 #ifndef MODULE_NAME
 #define MODULE_NAME 	"ThreadModule"
@@ -14,6 +18,7 @@
 #define PROC_DIRECTORY 	"threadDevice"
 #define PROC_FILENAME 	"thm"
 #define BUFFER_SIZE 40
+#define POOL_SIZE 3
 
 static char *data_buff;
 
@@ -24,6 +29,11 @@ static size_t data_size = 0;
 static int proc_read(struct file *file_p, char __user *buffer, size_t length, loff_t *offset);
 
 static struct file_operations proc_fops;
+static struct semaphore workers;
+static struct mutex data_lock;
+static struct task_struct *master_thread;
+static struct task_struct *worker_thread;
+static struct completion new_data;
 
 
 static int buffer_create(void)
@@ -82,6 +92,36 @@ static void implement_task(char *task)
 //=======================PROC FS OPERATIONS=========================
 //==================================================================
 
+static int worker_fun(void *args)
+{
+	char *work = (char *)args;
+	implement_task(work);
+	return 0;
+}
+
+static int master_fun(void *args)
+{
+	char task[6];
+	printk(KERN_INFO "ThM: Master thread initialized\n");
+
+	while(!kthread_should_stop()){
+
+		wait_for_completion(&new_data);
+		reinit_completion(&new_data);
+		printk("Master Thread: Data received");
+
+		mutex_lock(&data_lock);
+		strncpy(task, data_buff, 6);
+		mutex_unlock(&data_lock);
+
+		printk("Master Thread: Calling worker");
+		worker_thread = kthread_run(worker_fun, task, "worker_thread");
+
+		printk("Master Thread: Data proccessed");
+	}
+	return 0;
+}
+
 
 static void buffer_clean(void)
 {
@@ -124,15 +164,19 @@ static void cleanup_proc(void)
 static int proc_write(struct file *filp, const char *buf, size_t count, loff_t *offp)
 {
 	data_size = count;
+	int err;
 
 	if(data_size > BUFFER_SIZE){
 		data_size = BUFFER_SIZE;
 	}
+	//mutex_lock_interruptible(&data_lock);
+	err = raw_copy_from_user(data_buff, buf, data_size);
+	complete(&new_data);
+	//mutex_unlock(&data_lock);
 
-	if(raw_copy_from_user(data_buff, buf, data_size)){
+	if(err){
 		return -EFAULT;
 	}
-
 	return data_size;
 }
 
@@ -161,6 +205,11 @@ static int proc_read(struct file *filp, char *buffer, size_t len, loff_t *offset
 
 void threadModule_exit(void)
 {
+	
+	complete(&new_data);
+
+	kthread_stop(master_thread);
+
 	cleanup_proc();
 
 	buffer_clean();
@@ -191,7 +240,16 @@ int threadModule_init(void)
 		printk(KERN_ALERT "ThM: Failed to create procfs interface\n");
 		goto abort;
 	}
+	sema_init(&workers, POOL_SIZE);
+	printk(KERN_INFO "ThM: Semaphore initialized\n");
+
+	mutex_init(&data_lock);
+
+	init_completion(&new_data);
+
+	master_thread = kthread_run(master_fun, NULL, "master_thread");
 	printk(KERN_INFO "ThM: Module loaded\n");
+
 
 	return 0;
 	abort:
