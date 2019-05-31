@@ -61,7 +61,6 @@ static int mpu6050_read_acc_and_gyro(void)
 	g_mpu6050_data.gyro_values[0] = (s16)((u16)i2c_smbus_read_word_swapped(drv_client, REG_GYRO_XOUT_H));
 	g_mpu6050_data.gyro_values[1] = (s16)((u16)i2c_smbus_read_word_swapped(drv_client, REG_GYRO_YOUT_H));
 	g_mpu6050_data.gyro_values[2] = (s16)((u16)i2c_smbus_read_word_swapped(drv_client, REG_GYRO_ZOUT_H));
-	
 	dev_info(&drv_client->dev, "sensor data read:\n");
 	dev_info(&drv_client->dev, "ACCEL[X,Y,Z] = [%d, %d, %d]\n",
 		g_mpu6050_data.accel_values[0],
@@ -81,7 +80,7 @@ static int mpu6050_read_acc_and_gyro(void)
 static int mpu6050_probe(struct i2c_client *drv_client, const struct i2c_device_id *id)
 {
 	int ret;
-	printk(KERN_DEBUG "PROBE" );
+	printk(KERN_DEBUG "PROBE");
 	dev_info(&drv_client->dev,
 		"i2c client address is 0x%X\n", drv_client->addr);
 
@@ -111,7 +110,6 @@ static int mpu6050_probe(struct i2c_client *drv_client, const struct i2c_device_
 	i2c_smbus_write_byte_data(drv_client, REG_MOT_DUR, 40); //40 ms
 	i2c_smbus_write_byte_data(drv_client, REG_MOT_DETECT_CTRL, 0x15);
 	i2c_smbus_write_byte_data(drv_client, REG_INT_ENABLE, 0x40);
-	
 	g_mpu6050_data.drv_client = drv_client;
 
 	dev_info(&drv_client->dev, "i2c driver probed\n");
@@ -178,7 +176,8 @@ static ssize_t gyro_y_show(struct class *class,
 }
 
 static ssize_t gyro_z_show(struct class *class,
-			   struct class_attribute *attr, char *buf){
+			   struct class_attribute *attr, char *buf)
+{
 
 	sprintf(buf, "%d\n", g_mpu6050_data.gyro_values[2]);
 	return strlen(buf);
@@ -225,7 +224,7 @@ static irqreturn_t mpu_int_thr_fn(int irq, void *dev_id)
 }
 
 //Pointer to directory in /sys/class
-static struct class * class_dir;
+static struct class *class_dir;
 
 static int irqNumber;
 
@@ -241,20 +240,19 @@ static int mpu6050_init(void)
 	}
 	pr_info("mpu6050: i2c driver created\n");
 	ret = gpio_request(MPU_INT_PIN_NUMBER, "MPU INT");
-	if(ret){
+	if (ret) {
 		printk(KERN_ERR "Cannot request gpio\n");
 		return ret;
 	}
 	ret = gpio_direction_input(MPU_INT_PIN_NUMBER);
-	if(ret < 0){
+	if (ret < 0) {
 		printk(KERN_ERR "Cannot set input mode on gpio\n");
 		return ret;
 	}
-	
 	irqNumber = gpio_to_irq(MPU_INT_PIN_NUMBER);
-	ret = request_threaded_irq(irqNumber, mpu_int_main, mpu_int_thr_fn, 
-	 IRQF_TRIGGER_RISING, "MPU_INT", NULL);
-	if(ret){
+	ret = request_threaded_irq(irqNumber, mpu_int_main, mpu_int_thr_fn,
+		IRQF_TRIGGER_RISING, "MPU_INT", NULL);
+	if (ret) {
 		 printk(KERN_ERR "Cannot request interrupt\n");
 		 return ret;
 	 }
@@ -317,7 +315,6 @@ static int mpu6050_init(void)
 	}
 
 	pr_info("mpu6050: sysfs class attributes created\n");
-	
 	pr_info("mpu6050: module loaded\n");
 	return 0;
 }
