@@ -19,23 +19,23 @@
 #define PROC_FILENAME 	"thm"
 #define POOL_SIZE 3
 #define BUFFER_SIZE 40
-
+#define N 6
 static char *data_buff;
-static char *work;
+static char *workman;
 
 static struct proc_dir_entry *proc_dir;
 static struct proc_dir_entry *proc_file;
 static size_t data_size = 0;
 
 static int proc_read(struct file *file_p, char __user *buffer, size_t length, loff_t *offset);
-static int stop = 0;
+static int stay = 0;
 static int i = POOL_SIZE;
 
 static struct file_operations proc_fops;
-static struct semaphore workers;
+static struct semaphore operator;
 static struct mutex data_lock;
 static struct task_struct *master_thread;
-static struct task_struct *worker_thread[POOL_SIZE];
+static struct task_struct *operating_thread[POOL_SIZE];
 static struct completion new_data;
 static struct mutex count_lock;
 static struct mutex task_lock;
@@ -69,7 +69,7 @@ static void print_task(char *symbol, int block_len, int block_count)
 		}
 		printk("\n");
 	}
-	up(&workers);
+	up(&operator);
 
 	i++;
 }
@@ -104,53 +104,53 @@ static void implement_task(char *task)
 //==========================THREADS FUNCTIONS=======================
 //==================================================================
 
-static int worker_fun(void *args)
+static int WORKER(void *args)
 {
 	mutex_lock(&task_lock);
-	work = (char *)args;
-	implement_task(work);
+	workman = (char *)args;
+	implement_task(workman);
 	mutex_unlock(&task_lock);
 	return 0;
 }
 
-static int master_fun(void *args)
+//==========================MASTER FUNCTIONS=======================
+//==================================================================
+
+static int MASTER(void *args)
 {
-	char task[6];
-	printk(KERN_INFO "ThM: Master thread initialized\n");
+	char task[N];
+	
+	printk(KERN_INFO "ThM: MASTER THREAD TO INITIALIZED\n");
 
-	while(!kthread_should_stop()){
-
-		wait_for_completion(&new_data);
-		reinit_completion(&new_data);
-		if(stop)
-			break;
-		printk("Master Thread: Data received");
-
+	while(!kthread_should_stop()) {
+		wait_for_completion(&new_info);
+		reinit_completion(&new_info);
+		if(stay)
+		break;
+		printk("MASTER THREAD: Data Received");
 		mutex_lock(&data_lock);
-		strncpy(task, data_buff, 6);
+		strncpy(task, data_buff, N);
 		mutex_unlock(&data_lock);
-
-		printk("Master Thread: Calling worker");
-		down(&workers);
-		worker_thread[i] = kthread_run(worker_fun, task, "worker_thread");
+		printk("MASTER THREAD: TO CALL Worker");
+		down(&operator);
+		operating_thread[j] = kthread_run(WORKER, task, "operating_thread");
 		mutex_lock(&count_lock);
-		i--;
+		j--;
 		mutex_unlock(&count_lock);
-
-		printk("Master Thread: Data proccessed");
+		printk("MASTER THREAD: DATA PROCCESSED");
 	}
 	return 0;
 }
 
-static void stop_threads(void)
+static void STOP(void)
 {
-	stop = 1;
+	stay = 1;
 
-	complete(&new_data);
+	complete(&new_info);
 
 	kthread_stop(master_thread);
 
-	printk(KERN_INFO "ThM: Master thread stopped\n");
+	printk(KERN_INFO "ThM: MASTER TH STOPPED \n");
 }
 
 
@@ -205,7 +205,7 @@ static int proc_write(struct file *filp, const char *buf, size_t count, loff_t *
 	}
 	mutex_lock(&data_lock);
 	err = raw_copy_from_user(data_buff, buf, data_size);
-	complete(&new_data);
+	complete(&new_info);
 	mutex_unlock(&data_lock);
 	if(err) {
 	return -EFAULT;
@@ -241,7 +241,7 @@ static int proc_read(struct file *filp, char *buffer, size_t len, loff_t *offset
 void threadModule_exit(void)
 {
 
-	stop_threads();
+	STOP();
 
 	cleanup_proc();
 
@@ -274,14 +274,14 @@ int threadModule_init(void)
 		goto abort;
 	}
 
-	sema_init(&workers, POOL_SIZE);
+	sema_init(&operator, POOL_SIZE);
 	printk(KERN_INFO "ThM: Semaphore initialized\n");
 
 	mutex_init(&data_lock);
 
-	init_completion(&new_data);
+	init_completion(&new_info);
 
-	master_thread = kthread_run(master_fun, NULL, "master_thread");
+	master_thread = kthread_run(MASTER, NULL, "master_thread");
 
 	printk(KERN_INFO "ThM: Module loaded\n");
 
