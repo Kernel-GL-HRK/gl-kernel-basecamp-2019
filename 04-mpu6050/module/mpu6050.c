@@ -6,10 +6,13 @@
 #include <linux/i2c-dev.h>
 #include <linux/kobject.h>
 #include <linux/sysfs.h>
+#include <linux/interrupt.h>
+#include <linux/gpio.h>
 
 #include "mpu6050-regs.h"
 
-#define PRECISION 1000
+#define PRECISION           1000
+#define MPU_INT_PIN_NUMBER  10
 
 struct mpu6050_data {
 	struct i2c_client *drv_client;
@@ -20,9 +23,31 @@ struct mpu6050_data {
 
 static struct mpu6050_data g_mpu6050_data;
 
-static int mpu6050_read_data(void)
+
+static int mpu6050_read_temp(void)
 {
 	int temp_raw;
+	struct i2c_client *drv_client = g_mpu6050_data.drv_client;
+
+	if (drv_client == 0)
+		return -ENODEV;
+	/* Temperature in degrees C =
+	 * (TEMP_OUT Register Value  as a signed quantity)/340 + 36.53
+	 */
+	temp_raw = (s16)((u16)i2c_smbus_read_word_swapped(drv_client, REG_TEMP_OUT_H));
+	int temp_full = (temp_raw * PRECISION / 340) + 36530; //36.53 = 36530
+	g_mpu6050_data.temperature[0] =  temp_full / PRECISION;
+	g_mpu6050_data.temperature[1] =  temp_full % PRECISION;
+	int t_faren_full = temp_full * 9 / 5 + 32 * PRECISION; // F = C * 9 / 5 + 32
+	dev_info(&drv_client->dev, "TEMP[C,F] = [%d.%03d, %d.%03d]\n",
+		g_mpu6050_data.temperature[0], g_mpu6050_data.temperature[1],
+		t_faren_full / PRECISION, t_faren_full % PRECISION);
+	return 0;
+}
+
+
+static int mpu6050_read_acc_and_gyro(void)
+{
 	struct i2c_client *drv_client = g_mpu6050_data.drv_client;
 
 	if (drv_client == 0)
@@ -36,14 +61,6 @@ static int mpu6050_read_data(void)
 	g_mpu6050_data.gyro_values[0] = (s16)((u16)i2c_smbus_read_word_swapped(drv_client, REG_GYRO_XOUT_H));
 	g_mpu6050_data.gyro_values[1] = (s16)((u16)i2c_smbus_read_word_swapped(drv_client, REG_GYRO_YOUT_H));
 	g_mpu6050_data.gyro_values[2] = (s16)((u16)i2c_smbus_read_word_swapped(drv_client, REG_GYRO_ZOUT_H));
-	/* Temperature in degrees C =
-	 * (TEMP_OUT Register Value  as a signed quantity)/340 + 36.53
-	 */
-	temp_raw = (s16)((u16)i2c_smbus_read_word_swapped(drv_client, REG_TEMP_OUT_H));
-	int temp_full = (temp_raw * PRECISION / 340) + 36530; //36.53 = 36530
-	g_mpu6050_data.temperature[0] =  temp_full / PRECISION;
-	g_mpu6050_data.temperature[1] =  temp_full % PRECISION;
-	int t_faren_full = temp_full * 9 / 5 + 32 * PRECISION; // F = C * 9 / 5 + 32
 	dev_info(&drv_client->dev, "sensor data read:\n");
 	dev_info(&drv_client->dev, "ACCEL[X,Y,Z] = [%d, %d, %d]\n",
 		g_mpu6050_data.accel_values[0],
@@ -53,16 +70,17 @@ static int mpu6050_read_data(void)
 		g_mpu6050_data.gyro_values[0],
 		g_mpu6050_data.gyro_values[1],
 		g_mpu6050_data.gyro_values[2]);
-	dev_info(&drv_client->dev, "TEMP[C, F] = [%d.%03d, %d.%03d]\n",
-		g_mpu6050_data.temperature[0], g_mpu6050_data.temperature[1],
-		t_faren_full / PRECISION, t_faren_full % PRECISION);
+	int int_status = (s8)((u8)i2c_smbus_read_byte_data(drv_client, REG_INT_STATUS));
+	dev_info(&drv_client->dev, "INT STATUS %x\n", int_status);
 	return 0;
 }
+
+
 
 static int mpu6050_probe(struct i2c_client *drv_client, const struct i2c_device_id *id)
 {
 	int ret;
-	printk("PROBE" KERN_DEBUG);
+	printk(KERN_DEBUG "PROBE");
 	dev_info(&drv_client->dev,
 		"i2c client address is 0x%X\n", drv_client->addr);
 
@@ -83,19 +101,15 @@ static int mpu6050_probe(struct i2c_client *drv_client, const struct i2c_device_
 	dev_info(&drv_client->dev,
 		"i2c mpu6050 device found, WHO_AM_I register value = 0x%X\n",
 		ret);
-
 	/* Setup the device */
-	/* No error handling here! */
-	i2c_smbus_write_byte_data(drv_client, REG_CONFIG, 0);
-	i2c_smbus_write_byte_data(drv_client, REG_GYRO_CONFIG, 0);
-	i2c_smbus_write_byte_data(drv_client, REG_ACCEL_CONFIG, 0);
-	i2c_smbus_write_byte_data(drv_client, REG_FIFO_EN, 0);
-	i2c_smbus_write_byte_data(drv_client, REG_INT_PIN_CFG, 0);
-	i2c_smbus_write_byte_data(drv_client, REG_INT_ENABLE, 0);
-	i2c_smbus_write_byte_data(drv_client, REG_USER_CTRL, 0);
-	i2c_smbus_write_byte_data(drv_client, REG_PWR_MGMT_1, 0);
-	i2c_smbus_write_byte_data(drv_client, REG_PWR_MGMT_2, 0);
-
+	i2c_smbus_write_byte_data(drv_client, REG_PWR_MGMT_1, 0x00);
+	i2c_smbus_write_byte_data(drv_client, REG_SIG_PATH_RESET, 0x07);
+	i2c_smbus_write_byte_data(drv_client, REG_INT_PIN_CFG, 0x20);
+	i2c_smbus_write_byte_data(drv_client, REG_ACCEL_CONFIG, 0x01);
+	i2c_smbus_write_byte_data(drv_client, REG_MOT_THR, 20);
+	i2c_smbus_write_byte_data(drv_client, REG_MOT_DUR, 40); //40 ms
+	i2c_smbus_write_byte_data(drv_client, REG_MOT_DETECT_CTRL, 0x15);
+	i2c_smbus_write_byte_data(drv_client, REG_INT_ENABLE, 0x40);
 	g_mpu6050_data.drv_client = drv_client;
 
 	dev_info(&drv_client->dev, "i2c driver probed\n");
@@ -129,8 +143,6 @@ static struct i2c_driver mpu6050_i2c_driver = {
 static ssize_t accel_x_show(struct class *class,
 			    struct class_attribute *attr, char *buf)
 {
-	mpu6050_read_data();
-
 	sprintf(buf, "%d\n", g_mpu6050_data.accel_values[0]);
 	return strlen(buf);
 }
@@ -138,8 +150,6 @@ static ssize_t accel_x_show(struct class *class,
 static ssize_t accel_y_show(struct class *class,
 			    struct class_attribute *attr, char *buf)
 {
-	mpu6050_read_data();
-
 	sprintf(buf, "%d\n", g_mpu6050_data.accel_values[1]);
 	return strlen(buf);
 }
@@ -147,8 +157,6 @@ static ssize_t accel_y_show(struct class *class,
 static ssize_t accel_z_show(struct class *class,
 			    struct class_attribute *attr, char *buf)
 {
-	mpu6050_read_data();
-
 	sprintf(buf, "%d\n", g_mpu6050_data.accel_values[2]);
 	return strlen(buf);
 }
@@ -156,8 +164,6 @@ static ssize_t accel_z_show(struct class *class,
 static ssize_t gyro_x_show(struct class *class,
 			   struct class_attribute *attr, char *buf)
 {
-	mpu6050_read_data();
-
 	sprintf(buf, "%d\n", g_mpu6050_data.gyro_values[0]);
 	return strlen(buf);
 }
@@ -165,8 +171,6 @@ static ssize_t gyro_x_show(struct class *class,
 static ssize_t gyro_y_show(struct class *class,
 			   struct class_attribute *attr, char *buf)
 {
-	mpu6050_read_data();
-
 	sprintf(buf, "%d\n", g_mpu6050_data.gyro_values[1]);
 	return strlen(buf);
 }
@@ -174,7 +178,6 @@ static ssize_t gyro_y_show(struct class *class,
 static ssize_t gyro_z_show(struct class *class,
 			   struct class_attribute *attr, char *buf)
 {
-	mpu6050_read_data();
 
 	sprintf(buf, "%d\n", g_mpu6050_data.gyro_values[2]);
 	return strlen(buf);
@@ -183,15 +186,14 @@ static ssize_t gyro_z_show(struct class *class,
 static ssize_t temp_c_show(struct class *class,
 			 struct class_attribute *attr, char *buf)
 {
-	mpu6050_read_data();
-
+	mpu6050_read_temp();
 	sprintf(buf, "%d.%03d\n", g_mpu6050_data.temperature[0], g_mpu6050_data.temperature[1]);
 	return strlen(buf);
 }
 static ssize_t temp_f_show(struct class *class,
 			 struct class_attribute *attr, char *buf)
 {
-	mpu6050_read_data();
+	mpu6050_read_temp();
 	int t_faren_full = g_mpu6050_data.temperature[0] * PRECISION + g_mpu6050_data.temperature[1];
 	t_faren_full = t_faren_full * 9 / 5 + 32 * PRECISION;
 	sprintf(buf, "%d.%03d\n", t_faren_full / PRECISION, t_faren_full % PRECISION);
@@ -207,17 +209,24 @@ static struct class_attribute class_attr_gyro_z = __ATTR(gyro_z, 0444, gyro_z_sh
 static struct class_attribute class_attr_temp_c = __ATTR(temp_c, 0444, temp_c_show, NULL);
 static struct class_attribute class_attr_temp_f = __ATTR(temp_f, 0444, temp_f_show, NULL);
 
-/*
-CLASS_ATTR(accel_x, S_IRUGO, accel_x_show, NULL);
-CLASS_ATTR(accel_y, S_IRUGO, accel_y_show, NULL);
-CLASS_ATTR(accel_z, S_IRUGO, accel_z_show, NULL);
-CLASS_ATTR(gyro_x, S_IRUGO, gyro_x_show, NULL);
-CLASS_ATTR(gyro_y, S_IRUGO, gyro_y_show, NULL);
-CLASS_ATTR(gyro_z, S_IRUGO, gyro_z_show, NULL);
-CLASS_ATTR(temperature, S_IRUGO, temp_c_show, NULL);
-*/
+static irqreturn_t mpu_int_main(int irq, void *dev_id)
+{
+	disable_irq_nosync(irq);
+	printk(KERN_INFO "INTERRUPT ARRIEVED\n");
+	return IRQ_WAKE_THREAD;
+}
+static irqreturn_t mpu_int_thr_fn(int irq, void *dev_id)
+{
+	mpu6050_read_acc_and_gyro();
+	enable_irq(irq);
+	printk(KERN_INFO "INTERRUPT HANDELED\n");
+	return IRQ_HANDLED;
+}
+
 //Pointer to directory in /sys/class
-static struct class * class_dir;
+static struct class *class_dir;
+
+static int irqNumber;
 
 static int mpu6050_init(void)
 {
@@ -230,6 +239,24 @@ static int mpu6050_init(void)
 		return ret;
 	}
 	pr_info("mpu6050: i2c driver created\n");
+	ret = gpio_request(MPU_INT_PIN_NUMBER, "MPU INT");
+	if (ret) {
+		printk(KERN_ERR "Cannot request gpio\n");
+		return ret;
+	}
+	ret = gpio_direction_input(MPU_INT_PIN_NUMBER);
+	if (ret < 0) {
+		printk(KERN_ERR "Cannot set input mode on gpio\n");
+		return ret;
+	}
+	irqNumber = gpio_to_irq(MPU_INT_PIN_NUMBER);
+	ret = request_threaded_irq(irqNumber, mpu_int_main, mpu_int_thr_fn,
+		IRQF_TRIGGER_RISING, "MPU_INT", NULL);
+	if (ret) {
+		 printk(KERN_ERR "Cannot request interrupt\n");
+		 return ret;
+	 }
+
 	/* Create class */
 	class_dir = class_create(THIS_MODULE, "mpu6050");
 	if (IS_ERR(class_dir)) {
@@ -288,7 +315,6 @@ static int mpu6050_init(void)
 	}
 
 	pr_info("mpu6050: sysfs class attributes created\n");
-
 	pr_info("mpu6050: module loaded\n");
 	return 0;
 }
@@ -309,7 +335,8 @@ static void mpu6050_exit(void)
 		class_destroy(class_dir);
 		pr_info("mpu6050: sysfs class destroyed\n");
 	}
-
+	free_irq(irqNumber, NULL);
+	gpio_free(MPU_INT_PIN_NUMBER);
 	i2c_del_driver(&mpu6050_i2c_driver);
 	pr_info("mpu6050: i2c driver deleted\n");
 
